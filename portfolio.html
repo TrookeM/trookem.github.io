@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juan José Martínez | Software & Security</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #050505;
+            --bg-card: #111111;
+            --text-main: #e2e8f0;
+            --text-dim: #8892b0;
+            --accent-1: #00f0ff; /* Cyan */
+            --accent-2: #7000ff; /* Purple */
+            --glow: 0 0 20px rgba(0, 240, 255, 0.2);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(112, 0, 255, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(0, 240, 255, 0.08), transparent 25%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Nav */
+        nav {
+            position: fixed;
+            top: 0; width: 100%;
+            padding: 1.5rem 5%;
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(5, 5, 5, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .logo {
+            font-family: 'Fira Code', monospace;
+            font-weight: 600; font-size: 1.2rem;
+            color: var(--text-main);
+        }
+        .logo span { color: var(--accent-1); }
+
+        .lang-switch {
+            background: transparent;
+            border: 1px solid var(--accent-1);
+            color: var(--accent-1);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: 'Fira Code', monospace;
+            transition: all 0.3s;
+        }
+        .lang-switch:hover {
+            background: var(--accent-1);
+            color: var(--bg-dark);
+            box-shadow: var(--glow);
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+        /* Hero & Terminal */
+        .hero {
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+            justify-content: center;
+            padding-top: 80px;
+        }
+
+        .terminal {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            width: 100%; max-width: 800px;
+            margin-bottom: 2rem;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+        }
+
+        .terminal-header {
+            background: #1a1a1a;
+            padding: 10px;
+            display: flex; gap: 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .dot.red { background: #ff5f56; }
+        .dot.yellow { background: #ffbd2e; }
+        .dot.green { background: #27c93f; }
+
+        .terminal-body {
+            padding: 2rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 1.1rem;
+            color: var(--accent-1);
+            min-height: 150px;
+        }
+
+        .social-links a {
+            color: var(--text-main);
+            font-size: 1.5rem; margin-right: 1.5rem;
+            transition: color 0.3s, transform 0.3s;
+        }
+        .social-links a:hover {
+            color: var(--accent-1);
+            transform: translateY(-3px);
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-size: 2.5rem; font-weight: 800;
+            margin: 6rem 0 3rem 0;
+            background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        /* Bento Grid (Skills & Projects) */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .bento-box {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bento-box::before {
+            content: ''; position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, var(--accent-1), transparent);
+            transform: scaleX(0); transform-origin: left;
+            transition: transform 0.4s;
+        }
+
+        .bento-box:hover {
+            transform: translateY(-5px);
+            border-color: rgba(0, 240, 255, 0.3);
+            box-shadow: var(--glow);
+        }
+        .bento-box:hover::before { transform: scaleX(1); }
+
+        .bento-icon {
+            font-size: 2rem; color: var(--accent-1);
+            margin-bottom: 1rem;
+        }
+
+        .bento-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 1rem; }
+        .bento-desc { color: var(--text-dim); font-size: 0.95rem; }
+
+        .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1rem; }
+        .tag {
+            background: rgba(0, 240, 255, 0.1);
+            color: var(--accent-1);
+            padding: 4px 10px; border-radius: 6px;
+            font-size: 0.8rem; font-family: 'Fira Code', monospace;
+        }
+
+        /* Timeline (Experience) */
+        .timeline {
+            border-left: 2px solid rgba(255,255,255,0.1);
+            padding-left: 2rem; margin-left: 1rem;
+        }
+
+        .job { position: relative; margin-bottom: 3rem; }
+        
+        .job::before {
+            content: ''; position: absolute;
+            left: -2.4rem; top: 0.3rem;
+            width: 12px; height: 12px;
+            background: var(--accent-1);
+            border-radius: 50%;
+            box-shadow: var(--glow);
+        }
+
+        .job-title { font-size: 1.4rem; font-weight: 600; color: #fff; }
+        .job-company { color: var(--accent-1); font-family: 'Fira Code', monospace; font-size: 0.9rem; margin-bottom: 1rem;}
+        
+        .job-desc li {
+            color: var(--text-dim);
+            margin-bottom: 0.5rem; margin-left: 1rem;
+        }
+
+        /* Dual Lang logic */
+        .en { display: none; }
+
+        @media (max-width: 768px) {
+            .terminal-body { font-size: 0.9rem; }
+            .section-title { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">JuanJosé<span>.dev</span></div>
+        <button class="lang-switch" onclick="toggleLang()">ES / EN</button>
+    </nav>
+
+    <div class="container">
+        
+        <section class="hero">
+            <div class="terminal">
+                <div class="terminal-header">
+                    <div class="dot red"></div>
+                    <div class="dot yellow"></div>
+                    <div class="dot green"></div>
+                </div>
+                <div class="terminal-body" id="typewriter"></div>
+            </div>
+
+            <div class="social-links">
+                <a href="https://www.linkedin.com/in/juanjosemartinezmartinez55" target="_blank"><i class="fa-brands fa-linkedin"></i></a>
+                <a href="mailto:juanjmartinezm55@gmail.com"><i class="fa-solid fa-envelope"></i></a>
+                <a href="#"><i class="fa-brands fa-github"></i></a>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="section-title es">Arsenal Técnico</h2>
+            <h2 class="section-title en">Technical Arsenal</h2>
+            
+            <div class="bento-grid">
+                <div class="bento-box">
+                    <i class="fa-solid fa-layer-group bento-icon"></i>
+                    <div class="bento-title es">Arquitectura Frontend</div>
+                    <div class="bento-title en">Frontend Architecture</div>
+                    <div class="bento-desc es">Desarrollo de interfaces modulares y de alto rendimiento. Integración de Shadow DOM y Virtual DOM.</div>
+                    <div class="bento-desc en">Development of high-performance modular interfaces. Shadow DOM & Virtual DOM integration.</div>
+                    <div class="tags">
+                        <span class="tag">React</span><span class="tag">Lit Components</span><span class="tag">TypeScript</span><span class="tag">Apache ECharts</span>
+                    </div>
+                </div>
+
+                <div class="bento-box">
+                    <i class="fa-solid fa-shield-virus bento-icon"></i>
+                    <div class="bento-title">AppSec & "Secure by Design"</div>
+                    <div class="bento-desc es">Implementación proactiva de seguridad. Modelado de amenazas, validación estricta y Defensa en Profundidad.</div>
+                    <div class="bento-desc en">Proactive security implementation. Threat modeling, strict validation, and Defense in Depth.</div>
+                    <div class="tags">
+                        <span class="tag">Zod</span><span class="tag">DOMPurify</span><span class="tag">Offensive Sec</span><span class="tag">CompTIA Sec+ Prep</span>
+                    </div>
+                </div>
+
+                <div class="bento-box">
+                    <i class="fa-solid fa-server bento-icon"></i>
+                    <div class="bento-title es">Backend & Infraestructura</div>
+                    <div class="bento-title en">Backend & Infrastructure</div>
+                    <div class="bento-desc es">Modelado de bases de datos, creación de APIs y despliegue en entornos Linux y contenedores.</div>
+                    <div class="bento-desc en">Database modeling, API creation, and deployment in Linux and containerized environments.</div>
+                    <div class="tags">
+                        <span class="tag">PHP/Laravel</span><span class="tag">Java/C++</span><span class="tag">Docker</span><span class="tag">Tailscale VPN</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="section-title es">Experiencia</h2>
+            <h2 class="section-title en">Experience</h2>
+            
+            <div class="timeline">
+                <div class="job">
+                    <div class="job-title es">Ingeniero de Software en Prácticas (Visual Computing)</div>
+                    <div class="job-title en">Software Engineer Intern (Visual Computing)</div>
+                    <div class="job-company">DLR (Centro Aeroespacial Alemán) | Braunschweig, DE | 2026</div>
+                    <ul class="job-desc">
+                        <li class="es">I+D del framework VVAFER para el panel de telemetría de satélites interactivo.</li>
+                        <li class="en">R&D of the VVAFER framework for an interactive satellite telemetry dashboard.</li>
+                        <li class="es">Arquitectura frontend de 4 capas integrando React y Lit Web Components.</li>
+                        <li class="en">4-layer frontend architecture integrating React and Lit Web Components.</li>
+                        <li class="es">Mitigación proactiva de vulnerabilidades XSS mediante validación y sanitización.</li>
+                        <li class="en">Proactive mitigation of XSS vulnerabilities through validation and sanitization.</li>
+                    </ul>
+                </div>
+
+                <div class="job">
+                    <div class="job-title es">Desarrollador Junior de Software</div>
+                    <div class="job-title en">Junior Software Developer</div>
+                    <div class="job-company">Knowmad Mood (Proyecto El Corte Inglés)</div>
+                    <ul class="job-desc">
+                        <li class="es">Resolución de incidencias críticas de producción garantizando estabilidad bajo alto tráfico.</li>
+                        <li class="en">Resolution of critical production incidents ensuring stability under high traffic.</li>
+                    </ul>
+                </div>
+
+                <div class="job">
+                    <div class="job-title">Full-Stack Developer</div>
+                    <div class="job-company">Grubelgar S.L.</div>
+                    <ul class="job-desc">
+                        <li class="es">Liderazgo técnico de App de alquiler usando Kanban y arquitectura MVC en Laravel.</li>
+                        <li class="en">Technical lead of a rental App using Kanban and MVC architecture in Laravel.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="section-title es">Proyectos Destacados</h2>
+            <h2 class="section-title en">Featured Projects</h2>
+            
+            <div class="bento-grid" style="margin-bottom: 5rem;">
+                <div class="bento-box">
+                    <div class="bento-title es">TFM: QML para Detección de Intrusos</div>
+                    <div class="bento-title en">Master's Thesis: QML for IDS</div>
+                    <div class="bento-desc es">Implementación práctica de algoritmos de Quantum Machine Learning (QML) integrados en Sistemas de Detección de Intrusos.</div>
+                    <div class="bento-desc en">Practical implementation of Quantum Machine Learning (QML) algorithms integrated into Intrusion Detection Systems.</div>
+                    <div class="tags"><span class="tag">AI/ML</span><span class="tag">Quantum Computing</span><span class="tag">Cybersecurity</span></div>
+                </div>
+
+                <div class="bento-box">
+                    <div class="bento-title">Mission Control: We Have a Problem</div>
+                    <div class="bento-desc es">Desarrollo de videojuego cooperativo estilo "scrap-punk". Programación de mecánicas avanzadas en motor gráfico de última generación.</div>
+                    <div class="bento-desc en">Cooperative "scrap-punk" style video game development. Programming of advanced mechanics in a next-gen graphics engine.</div>
+                    <div class="tags"><span class="tag">C++</span><span class="tag">Unreal Engine 5</span><span class="tag">Blueprints</span></div>
+                </div>
+
+                <div class="bento-box">
+                    <div class="bento-title">Hardware & Home-Lab</div>
+                    <div class="bento-desc es">Experimentación con microcontroladores ESP32 (WiFi Radar) y despliegue de infraestructura privada en contenedores.</div>
+                    <div class="bento-desc en">Experimentation with ESP32 microcontrollers (WiFi Radar) and deployment of private containerized infrastructure.</div>
+                    <div class="tags"><span class="tag">ESP32</span><span class="tag">Networking</span><span class="tag">Linux</span></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Efecto Máquina de Escribir (Terminal)
+        const textES = "> Hola, soy Juan José Martínez.\n> Graduado en Ingeniería Informática y Máster en Ciberseguridad.\n> Especializado en arquitecturas de alto rendimiento y 'Secure by Design'.\n> _";
+        const textEN = "> Hi, I'm Juan José Martínez.\n> Computer Engineering grad & Master in Cybersecurity.\n> Specializing in high-performance architectures & 'Secure by Design'.\n> _";
+        
+        let currentLang = 'es';
+        const typeWriterElement = document.getElementById('typewriter');
+        let typeInterval;
+
+        function typeWriter(text, i) {
+            if (i < text.length) {
+                typeWriterElement.innerHTML = text.substring(0, i+1).replace(/\n/g, '<br>');
+                typeInterval = setTimeout(() => typeWriter(text, i + 1), 40);
+            }
+        }
+
+        function startTyping() {
+            clearTimeout(typeInterval);
+            typeWriterElement.innerHTML = '';
+            typeWriter(currentLang === 'es' ? textES : textEN, 0);
+        }
+
+        // Iniciar al cargar
+        window.onload = startTyping;
+
+        // Cambio de Idioma
+        function toggleLang() {
+            currentLang = currentLang === 'es' ? 'en' : 'es';
+            
+            document.querySelectorAll('.es').forEach(el => el.style.display = currentLang === 'es' ? 'block' : 'none');
+            document.querySelectorAll('.en').forEach(el => el.style.display = currentLang === 'en' ? 'block' : 'none');
+            
+            // Especial para elementos que son in-line (como los títulos de bento boxes)
+            document.querySelectorAll('.bento-title.es, .job-title.es').forEach(el => el.style.display = currentLang === 'es' ? 'block' : 'none');
+            document.querySelectorAll('.bento-title.en, .job-title.en').forEach(el => el.style.display = currentLang === 'en' ? 'block' : 'none');
+
+            startTyping();
+        }
+    </script>
+</body>
+</html>
