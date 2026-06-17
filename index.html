@@ -1,385 +1,460 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juan José Martínez | Software & Security</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>Juan José Martínez | Software & Security Engineer</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
-            --bg-dark: #050505;
-            --bg-card: #111111;
-            --text-main: #e2e8f0;
-            --text-dim: #8892b0;
-            --accent-1: #00f0ff; /* Cyan */
-            --accent-2: #7000ff; /* Purple */
-            --glow: 0 0 20px rgba(0, 240, 255, 0.2);
+            --bg-base: #050505;
+            --bg-surface: #0a0a0a;
+            --bg-card: #121212;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(0, 229, 255, 0.3);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --accent-cyan: #00e5ff;
+            --accent-blue: #3b82f6;
+            --glow: 0 0 25px rgba(0, 229, 255, 0.1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(112, 0, 255, 0.08), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(0, 240, 255, 0.08), transparent 25%);
-            background-attachment: fixed;
-            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
             line-height: 1.6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Nav */
-        nav {
+        /* Abstract Background Elements */
+        .bg-glow {
             position: fixed;
-            top: 0; width: 100%;
-            padding: 1.5rem 5%;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(0, 229, 255, 0.03) 0%, transparent 70%);
+            top: -200px; right: -200px;
+            z-index: -1; pointer-events: none;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed; top: 0; width: 100%;
+            background: rgba(5, 5, 5, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 1.2rem 5%; z-index: 100;
             display: flex; justify-content: space-between; align-items: center;
-            background: rgba(5, 5, 5, 0.8);
-            backdrop-filter: blur(10px);
-            z-index: 100;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
-        .logo {
-            font-family: 'Fira Code', monospace;
-            font-weight: 600; font-size: 1.2rem;
-            color: var(--text-main);
-        }
-        .logo span { color: var(--accent-1); }
+        .logo { font-family: 'Fira Code', monospace; font-weight: 500; font-size: 1.1rem; }
+        .logo span { color: var(--accent-cyan); }
 
-        .lang-switch {
-            background: transparent;
-            border: 1px solid var(--accent-1);
-            color: var(--accent-1);
-            padding: 0.4rem 1rem;
-            border-radius: 20px;
-            cursor: pointer;
-            font-family: 'Fira Code', monospace;
-            transition: all 0.3s;
+        .nav-controls { display: flex; gap: 1rem; align-items: center; }
+        
+        .btn-lang {
+            background: transparent; color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+            padding: 0.4rem 0.8rem; border-radius: 6px;
+            font-family: 'Fira Code', monospace; font-size: 0.85rem;
+            cursor: pointer; transition: all 0.3s;
         }
-        .lang-switch:hover {
-            background: var(--accent-1);
-            color: var(--bg-dark);
-            box-shadow: var(--glow);
-        }
+        .btn-lang:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
 
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
 
-        /* Hero & Terminal */
+        /* Typography */
+        h1, h2, h3 { font-weight: 600; }
+        .mono { font-family: 'Fira Code', monospace; }
+        .text-accent { color: var(--accent-cyan); }
+
+        /* Hero Section */
         .hero {
             min-height: 100vh;
-            display: flex; flex-direction: column;
-            justify-content: center;
-            padding-top: 80px;
+            display: flex; flex-direction: column; justify-content: center;
+            padding-top: 5rem;
         }
 
-        .terminal {
-            background: var(--bg-card);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
-            width: 100%; max-width: 800px;
-            margin-bottom: 2rem;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-        }
-
-        .terminal-header {
-            background: #1a1a1a;
-            padding: 10px;
-            display: flex; gap: 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .dot { width: 12px; height: 12px; border-radius: 50%; }
-        .dot.red { background: #ff5f56; }
-        .dot.yellow { background: #ffbd2e; }
-        .dot.green { background: #27c93f; }
-
-        .terminal-body {
-            padding: 2rem;
+        .hero-intro { font-size: 1.1rem; margin-bottom: 1rem; }
+        .hero h1 { font-size: clamp(3rem, 6vw, 4.5rem); letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 1.5rem; }
+        
+        .typewriter-container {
             font-family: 'Fira Code', monospace;
-            font-size: 1.1rem;
-            color: var(--accent-1);
-            min-height: 150px;
+            font-size: clamp(1rem, 2vw, 1.3rem);
+            color: var(--text-secondary);
+            margin-bottom: 2.5rem; min-height: 60px;
         }
+        .cursor { display: inline-block; width: 8px; height: 20px; background: var(--accent-cyan); animation: blink 1s step-end infinite; vertical-align: text-bottom;}
+        @keyframes blink { 50% { opacity: 0; } }
 
-        .social-links a {
-            color: var(--text-main);
-            font-size: 1.5rem; margin-right: 1.5rem;
-            transition: color 0.3s, transform 0.3s;
+        .hero-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+        .hero-links a {
+            color: var(--text-primary); text-decoration: none;
+            display: flex; align-items: center; gap: 8px;
+            padding: 0.6rem 1.2rem; border-radius: 8px;
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-surface);
+            transition: all 0.3s; font-size: 0.95rem;
         }
-        .social-links a:hover {
-            color: var(--accent-1);
-            transform: translateY(-3px);
-        }
+        .hero-links a:hover { border-color: var(--accent-cyan); transform: translateY(-2px); box-shadow: var(--glow); }
 
-        /* Section Titles */
-        .section-title {
-            font-size: 2.5rem; font-weight: 800;
-            margin: 6rem 0 3rem 0;
-            background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: inline-block;
+        /* Section Layouts */
+        .section { padding: 6rem 0; border-top: 1px solid var(--border-subtle); }
+        .section-header {
+            display: flex; align-items: baseline; gap: 1.5rem; margin-bottom: 3rem;
         }
+        .section-number { font-family: 'Fira Code', monospace; color: var(--accent-cyan); font-size: 1.2rem; }
+        .section-title { font-size: 2rem; }
 
-        /* Bento Grid (Skills & Projects) */
-        .bento-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
+        /* Grid Framework */
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
 
-        .bento-box {
+        /* Cards & UI Elements */
+        .card {
             background: var(--bg-card);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 16px;
-            padding: 2rem;
-            transition: all 0.4s;
-            position: relative;
-            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px; padding: 2rem;
+            transition: all 0.3s;
         }
+        .card:hover { border-color: var(--border-hover); transform: translateY(-4px); }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+        .card-icon { font-size: 1.5rem; color: var(--accent-cyan); }
+        .card-title { font-size: 1.2rem; margin-bottom: 0.5rem; color: #fff; }
+        .card-subtitle { font-family: 'Fira Code', monospace; font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 1rem; }
+        
+        /* Lists & Tags */
+        .feature-list { list-style: none; color: var(--text-secondary); font-size: 0.95rem; }
+        .feature-list li { position: relative; padding-left: 1.5rem; margin-bottom: 0.8rem; }
+        .feature-list li::before { content: "▹"; position: absolute; left: 0; color: var(--accent-cyan); }
 
-        .bento-box::before {
-            content: ''; position: absolute;
-            top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, var(--accent-1), transparent);
-            transform: scaleX(0); transform-origin: left;
-            transition: transform 0.4s;
-        }
-
-        .bento-box:hover {
-            transform: translateY(-5px);
-            border-color: rgba(0, 240, 255, 0.3);
-            box-shadow: var(--glow);
-        }
-        .bento-box:hover::before { transform: scaleX(1); }
-
-        .bento-icon {
-            font-size: 2rem; color: var(--accent-1);
-            margin-bottom: 1rem;
-        }
-
-        .bento-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 1rem; }
-        .bento-desc { color: var(--text-dim); font-size: 0.95rem; }
-
-        .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1rem; }
+        .tag-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1.5rem; }
         .tag {
-            background: rgba(0, 240, 255, 0.1);
-            color: var(--accent-1);
-            padding: 4px 10px; border-radius: 6px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            padding: 4px 10px; border-radius: 4px;
             font-size: 0.8rem; font-family: 'Fira Code', monospace;
         }
 
-        /* Timeline (Experience) */
-        .timeline {
-            border-left: 2px solid rgba(255,255,255,0.1);
-            padding-left: 2rem; margin-left: 1rem;
+        /* Timeline specific */
+        .timeline-item { padding-bottom: 3rem; border-left: 1px solid var(--border-subtle); padding-left: 2rem; position: relative; }
+        .timeline-item::before {
+            content: ''; position: absolute; left: -5px; top: 0;
+            width: 9px; height: 9px; border-radius: 50%;
+            background: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan);
         }
 
-        .job { position: relative; margin-bottom: 3rem; }
-        
-        .job::before {
-            content: ''; position: absolute;
-            left: -2.4rem; top: 0.3rem;
-            width: 12px; height: 12px;
-            background: var(--accent-1);
-            border-radius: 50%;
-            box-shadow: var(--glow);
-        }
-
-        .job-title { font-size: 1.4rem; font-weight: 600; color: #fff; }
-        .job-company { color: var(--accent-1); font-family: 'Fira Code', monospace; font-size: 0.9rem; margin-bottom: 1rem;}
-        
-        .job-desc li {
-            color: var(--text-dim);
-            margin-bottom: 0.5rem; margin-left: 1rem;
-        }
-
-        /* Dual Lang logic */
-        .en { display: none; }
-
-        @media (max-width: 768px) {
-            .terminal-body { font-size: 0.9rem; }
-            .section-title { font-size: 2rem; }
-        }
+        /* Utilities */
+        .es { display: none; }
+        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+        .text-justify { text-align: justify; color: var(--text-secondary); margin-bottom: 1rem; }
     </style>
 </head>
 <body>
 
+    <div class="bg-glow"></div>
+
     <nav>
-        <div class="logo">JuanJosé<span>.dev</span></div>
-        <button class="lang-switch" onclick="toggleLang()">ES / EN</button>
+        <div class="logo">JuanJosé<span class="mono">.dev</span></div>
+        <div class="nav-controls">
+            <button class="btn-lang" onclick="toggleLang()">EN / ES</button>
+        </div>
     </nav>
 
     <div class="container">
         
         <section class="hero">
-            <div class="terminal">
-                <div class="terminal-header">
-                    <div class="dot red"></div>
-                    <div class="dot yellow"></div>
-                    <div class="dot green"></div>
-                </div>
-                <div class="terminal-body" id="typewriter"></div>
+            <div class="hero-intro mono text-accent"><span class="en">Hello, my name is</span><span class="es">Hola, mi nombre es</span></div>
+            <h1>Juan José Martínez.</h1>
+            
+            <div class="typewriter-container">
+                <span id="typewriter"></span><span class="cursor"></span>
             </div>
 
-            <div class="social-links">
-                <a href="https://www.linkedin.com/in/juanjosemartinezmartinez55" target="_blank"><i class="fa-brands fa-linkedin"></i></a>
-                <a href="mailto:juanjmartinezm55@gmail.com"><i class="fa-solid fa-envelope"></i></a>
-                <a href="#"><i class="fa-brands fa-github"></i></a>
+            <div class="text-justify" style="max-width: 700px; margin-bottom: 2.5rem; font-size: 1.05rem;">
+                <span class="en">Computer Engineering graduate specializing in advanced frontend architectures and secure full-stack development. Currently pursuing a Master's in Cybersecurity, blending high-performance software engineering with strict "Secure by Design" principles.</span>
+                <span class="es">Graduado en Ingeniería Informática especializado en arquitecturas frontend avanzadas y desarrollo full-stack. Actualmente cursando un Máster en Ciberseguridad, combinando el desarrollo de software de alto rendimiento con prácticas de seguridad desde el diseño (Secure by Design).</span>
+            </div>
+
+            <div class="hero-links">
+                <a href="mailto:juanjmartinezm55@gmail.com"><i class="fa-regular fa-envelope"></i> juanjmartinezm55@gmail.com</a>
+                <a href="tel:+34657149602"><i class="fa-solid fa-phone"></i> +34 657 149 602</a>
+                <a href="https://www.linkedin.com/in/juanjosemartinezmartinez55" target="_blank"><i class="fa-brands fa-linkedin-in"></i> LinkedIn</a>
             </div>
         </section>
 
-        <section>
-            <h2 class="section-title es">Arsenal Técnico</h2>
-            <h2 class="section-title en">Technical Arsenal</h2>
-            
-            <div class="bento-grid">
-                <div class="bento-box">
-                    <i class="fa-solid fa-layer-group bento-icon"></i>
-                    <div class="bento-title es">Arquitectura Frontend</div>
-                    <div class="bento-title en">Frontend Architecture</div>
-                    <div class="bento-desc es">Desarrollo de interfaces modulares y de alto rendimiento. Integración de Shadow DOM y Virtual DOM.</div>
-                    <div class="bento-desc en">Development of high-performance modular interfaces. Shadow DOM & Virtual DOM integration.</div>
-                    <div class="tags">
-                        <span class="tag">React</span><span class="tag">Lit Components</span><span class="tag">TypeScript</span><span class="tag">Apache ECharts</span>
-                    </div>
-                </div>
-
-                <div class="bento-box">
-                    <i class="fa-solid fa-shield-virus bento-icon"></i>
-                    <div class="bento-title">AppSec & "Secure by Design"</div>
-                    <div class="bento-desc es">Implementación proactiva de seguridad. Modelado de amenazas, validación estricta y Defensa en Profundidad.</div>
-                    <div class="bento-desc en">Proactive security implementation. Threat modeling, strict validation, and Defense in Depth.</div>
-                    <div class="tags">
-                        <span class="tag">Zod</span><span class="tag">DOMPurify</span><span class="tag">Offensive Sec</span><span class="tag">CompTIA Sec+ Prep</span>
-                    </div>
-                </div>
-
-                <div class="bento-box">
-                    <i class="fa-solid fa-server bento-icon"></i>
-                    <div class="bento-title es">Backend & Infraestructura</div>
-                    <div class="bento-title en">Backend & Infrastructure</div>
-                    <div class="bento-desc es">Modelado de bases de datos, creación de APIs y despliegue en entornos Linux y contenedores.</div>
-                    <div class="bento-desc en">Database modeling, API creation, and deployment in Linux and containerized environments.</div>
-                    <div class="tags">
-                        <span class="tag">PHP/Laravel</span><span class="tag">Java/C++</span><span class="tag">Docker</span><span class="tag">Tailscale VPN</span>
-                    </div>
-                </div>
+        <section class="section reveal" id="expertise">
+            <div class="section-header">
+                <span class="section-number">01.</span>
+                <h2 class="section-title"><span class="en">Technical Expertise</span><span class="es">Dominio Técnico</span></h2>
             </div>
-        </section>
 
-        <section>
-            <h2 class="section-title es">Experiencia</h2>
-            <h2 class="section-title en">Experience</h2>
-            
-            <div class="timeline">
-                <div class="job">
-                    <div class="job-title es">Ingeniero de Software en Prácticas (Visual Computing)</div>
-                    <div class="job-title en">Software Engineer Intern (Visual Computing)</div>
-                    <div class="job-company">DLR (Centro Aeroespacial Alemán) | Braunschweig, DE | 2026</div>
-                    <ul class="job-desc">
-                        <li class="es">I+D del framework VVAFER para el panel de telemetría de satélites interactivo.</li>
-                        <li class="en">R&D of the VVAFER framework for an interactive satellite telemetry dashboard.</li>
-                        <li class="es">Arquitectura frontend de 4 capas integrando React y Lit Web Components.</li>
-                        <li class="en">4-layer frontend architecture integrating React and Lit Web Components.</li>
-                        <li class="es">Mitigación proactiva de vulnerabilidades XSS mediante validación y sanitización.</li>
-                        <li class="en">Proactive mitigation of XSS vulnerabilities through validation and sanitization.</li>
+            <div class="grid-3">
+                <div class="card">
+                    <i class="fa-solid fa-layer-group card-icon" style="margin-bottom: 1rem;"></i>
+                    <h3 class="card-title"><span class="en">Software Architecture</span><span class="es">Arquitectura de Software</span></h3>
+                    <ul class="feature-list">
+                        <li>Java, C, C#, Python</li>
+                        <li>TypeScript / JavaScript</li>
+                        <li>React & Lit (Web Components)</li>
+                        <li>Apache ECharts & Vite</li>
+                        <li>PHP, Laravel, Livewire, Filament</li>
                     </ul>
                 </div>
-
-                <div class="job">
-                    <div class="job-title es">Desarrollador Junior de Software</div>
-                    <div class="job-title en">Junior Software Developer</div>
-                    <div class="job-company">Knowmad Mood (Proyecto El Corte Inglés)</div>
-                    <ul class="job-desc">
-                        <li class="es">Resolución de incidencias críticas de producción garantizando estabilidad bajo alto tráfico.</li>
-                        <li class="en">Resolution of critical production incidents ensuring stability under high traffic.</li>
+                <div class="card">
+                    <i class="fa-solid fa-shield-halved card-icon" style="margin-bottom: 1rem;"></i>
+                    <h3 class="card-title"><span class="en">Security & AppSec</span><span class="es">Seguridad y AppSec</span></h3>
+                    <ul class="feature-list">
+                        <li>"Secure by Design" Methodologies</li>
+                        <li>Frontend Validation (Zod, DOMPurify)</li>
+                        <li>Offensive Security Concepts</li>
+                        <li>WiFi Auditing (CSI)</li>
+                        <li>Threat Modeling</li>
                     </ul>
                 </div>
-
-                <div class="job">
-                    <div class="job-title">Full-Stack Developer</div>
-                    <div class="job-company">Grubelgar S.L.</div>
-                    <ul class="job-desc">
-                        <li class="es">Liderazgo técnico de App de alquiler usando Kanban y arquitectura MVC en Laravel.</li>
-                        <li class="en">Technical lead of a rental App using Kanban and MVC architecture in Laravel.</li>
+                <div class="card">
+                    <i class="fa-solid fa-server card-icon" style="margin-bottom: 1rem;"></i>
+                    <h3 class="card-title"><span class="en">Infrastructure & Data</span><span class="es">Infraestructura y Datos</span></h3>
+                    <ul class="feature-list">
+                        <li>Advanced SQL & ER Modeling</li>
+                        <li>VPS Administration (Linux)</li>
+                        <li>Docker Containerization</li>
+                        <li>CI/CD, Git & QA Testing</li>
+                        <li>Agile (Scrum / Kanban / Jira)</li>
                     </ul>
                 </div>
             </div>
         </section>
 
-        <section>
-            <h2 class="section-title es">Proyectos Destacados</h2>
-            <h2 class="section-title en">Featured Projects</h2>
-            
-            <div class="bento-grid" style="margin-bottom: 5rem;">
-                <div class="bento-box">
-                    <div class="bento-title es">TFM: QML para Detección de Intrusos</div>
-                    <div class="bento-title en">Master's Thesis: QML for IDS</div>
-                    <div class="bento-desc es">Implementación práctica de algoritmos de Quantum Machine Learning (QML) integrados en Sistemas de Detección de Intrusos.</div>
-                    <div class="bento-desc en">Practical implementation of Quantum Machine Learning (QML) algorithms integrated into Intrusion Detection Systems.</div>
-                    <div class="tags"><span class="tag">AI/ML</span><span class="tag">Quantum Computing</span><span class="tag">Cybersecurity</span></div>
+        <section class="section reveal" id="experience">
+            <div class="section-header">
+                <span class="section-number">02.</span>
+                <h2 class="section-title"><span class="en">Where I've Worked</span><span class="es">Experiencia Profesional</span></h2>
+            </div>
+
+            <div>
+                <div class="timeline-item">
+                    <h3 class="card-title">
+                        <span class="en">Software Engineer Intern (Visual Computing)</span>
+                        <span class="es">Ingeniero de Software en Prácticas (Visual Computing)</span> 
+                        <span class="text-accent">@ DLR</span>
+                    </h3>
+                    <div class="card-subtitle">Braunschweig, Germany | May 2026 - Aug 2026</div>
+                    <ul class="feature-list">
+                        <li class="en">R&D of the VVAFER framework for an interactive satellite telemetry dashboard ("dlr-satellite-dashboard").</li>
+                        <li class="es">Investigación y desarrollo del framework VVAFER para el panel de control interactivo de telemetría de satélites ("dlr-satellite-dashboard").</li>
+                        
+                        <li class="en">Designed a decoupled 4-layer frontend architecture integrating React Virtual DOM with Lit Shadow DOM to optimize performance and tech agnosticism.</li>
+                        <li class="es">Diseño e implementación de una arquitectura frontend desacoplada de 4 capas, integrando el Virtual DOM de React con el Shadow DOM de Lit.</li>
+                        
+                        <li class="en">Applied "Defense in Depth" principles, implementing schema validation (Zod) and sanitization (DOMPurify) to proactively mitigate XSS injection vulnerabilities.</li>
+                        <li class="es">Aplicación de ciberseguridad "Defense in Depth", implementando middleware de validación (Zod) y sanitización (DOMPurify) contra XSS.</li>
+                        
+                        <li class="en">Data visualization of complex telemetry using Apache ECharts and TypeScript. Deployed on Linux VPS environments.</li>
+                        <li class="es">Visualización de datos complejos de telemetría con Apache ECharts y TS. Despliegue y administración de VPS Linux.</li>
+                    </ul>
                 </div>
 
-                <div class="bento-box">
-                    <div class="bento-title">Mission Control: We Have a Problem</div>
-                    <div class="bento-desc es">Desarrollo de videojuego cooperativo estilo "scrap-punk". Programación de mecánicas avanzadas en motor gráfico de última generación.</div>
-                    <div class="bento-desc en">Cooperative "scrap-punk" style video game development. Programming of advanced mechanics in a next-gen graphics engine.</div>
-                    <div class="tags"><span class="tag">C++</span><span class="tag">Unreal Engine 5</span><span class="tag">Blueprints</span></div>
+                <div class="timeline-item">
+                    <h3 class="card-title">
+                        <span class="en">Junior Software Developer</span>
+                        <span class="es">Desarrollador Junior</span> 
+                        <span class="text-accent">@ Knowmad Mood</span>
+                    </h3>
+                    <div class="card-subtitle"><span class="en">El Corte Inglés Project</span><span class="es">Proyecto El Corte Inglés</span></div>
+                    <ul class="feature-list">
+                        <li class="en">Analyzed and resolved critical production incidents for a major retailer ensuring system stability under high traffic.</li>
+                        <li class="es">Análisis y resolución de incidencias críticas de producción para un importante retailer, asegurando la estabilidad del sistema bajo alto tráfico.</li>
+                        <li class="en">Direct client contact for agile problem resolution within a Scrum framework.</li>
+                        <li class="es">Contacto directo con clientes para la resolución ágil de problemas en el marco de trabajo Scrum.</li>
+                    </ul>
                 </div>
 
-                <div class="bento-box">
-                    <div class="bento-title">Hardware & Home-Lab</div>
-                    <div class="bento-desc es">Experimentación con microcontroladores ESP32 (WiFi Radar) y despliegue de infraestructura privada en contenedores.</div>
-                    <div class="bento-desc en">Experimentation with ESP32 microcontrollers (WiFi Radar) and deployment of private containerized infrastructure.</div>
-                    <div class="tags"><span class="tag">ESP32</span><span class="tag">Networking</span><span class="tag">Linux</span></div>
+                <div class="timeline-item" style="border-left: transparent;">
+                    <h3 class="card-title">
+                        <span class="en">Full-Stack Developer</span>
+                        <span class="es">Desarrollador Full-Stack</span> 
+                        <span class="text-accent">@ Grubelgar S.L.</span>
+                    </h3>
+                    <div class="card-subtitle"><span class="en">Campervan Rental App</span><span class="es">App de Alquiler de Autocaravanas</span></div>
+                    <ul class="feature-list">
+                        <li class="en">Project technical lead using Kanban methodologies. Engineered an MVC/Service Layer architecture in Laravel.</li>
+                        <li class="es">Liderazgo del proyecto utilizando Kanban. Diseño de arquitectura MVC/Capa de Servicios y modelado escalable en Laravel.</li>
+                        <li class="en">Optimized UX via asynchronous logic (AJAX) during checkout and automated PDF/notification workflows.</li>
+                        <li class="es">Optimización de la UX mediante lógica asíncrona (AJAX) en pagos y automatización de PDFs y notificaciones.</li>
+                    </ul>
                 </div>
             </div>
         </section>
+
+        <section class="section reveal" id="projects">
+            <div class="section-header">
+                <span class="section-number">03.</span>
+                <h2 class="section-title"><span class="en">Projects & Research</span><span class="es">Proyectos e Investigación</span></h2>
+            </div>
+
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-network-wired card-icon"></i>
+                        <a href="#" style="color: var(--text-secondary);"><i class="fa-brands fa-github"></i></a>
+                    </div>
+                    <h3 class="card-title"><span class="en">Master's Thesis: QML for IDS</span><span class="es">TFM: QML aplicado a IDS</span></h3>
+                    <p class="text-justify">
+                        <span class="en">Practical implementation of Quantum Machine Learning (QML) methodologies to enhance Intrusion Detection Systems (IDS), shifting from theoretical models to applied cybersecurity environments.</span>
+                        <span class="es">Implementación práctica de metodologías de Quantum Machine Learning (QML) para mejorar los Sistemas de Detección de Intrusos (IDS), pasando de la teoría a la aplicación en ciberseguridad.</span>
+                    </p>
+                    <div class="tag-group">
+                        <span class="tag">AI / ML</span><span class="tag">Quantum Computing</span><span class="tag">Cybersecurity</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-microchip card-icon"></i>
+                    </div>
+                    <h3 class="card-title">Hardware & Home-Lab</h3>
+                    <p class="text-justify">
+                        <span class="en">Development of ESP32 networking experiments (WiFi Radar, Pwnagotchi). Deployed a private cloud using Docker (Nextcloud, Immich) secured via Tailscale VPN.</span>
+                        <span class="es">Desarrollo con ESP32 (WiFi Radar, Pwnagotchi). Despliegue de nube privada en Docker (Nextcloud, Immich) y red segura gestionada mediante VPN Tailscale.</span>
+                    </p>
+                    <div class="tag-group">
+                        <span class="tag">ESP32</span><span class="tag">Docker</span><span class="tag">Tailscale</span><span class="tag">Linux</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-chart-line card-icon"></i>
+                    </div>
+                    <h3 class="card-title"><span class="en">Bachelor's Thesis: Admin Panel</span><span class="es">TFG: Panel de Administración</span></h3>
+                    <p class="text-justify">
+                        <span class="en">Design and implementation of a web administration panel for academic data visualization. Managed via Jira, incorporating rigorous unit and integration testing.</span>
+                        <span class="es">Diseño e implementación de un panel web para visualizaciones orientadas a la toma de decisiones académicas. Gestión con Jira y pruebas de integración/unitarias.</span>
+                    </p>
+                    <div class="tag-group">
+                        <span class="tag">PHP/XAMPP</span><span class="tag">Unit Testing</span><span class="tag">Jira</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-gamepad card-icon"></i>
+                    </div>
+                    <h3 class="card-title">Mission Control: We Have a Problem</h3>
+                    <p class="text-justify">
+                        <span class="en">Development of a cooperative "scrap-punk" style video game utilizing advanced mechanics and system architecture.</span>
+                        <span class="es">Desarrollo de videojuego cooperativo de estilo "scrap-punk" implementando mecánicas avanzadas y arquitectura de sistemas.</span>
+                    </p>
+                    <div class="tag-group">
+                        <span class="tag">C++</span><span class="tag">Unreal Engine 5</span><span class="tag">Blueprints</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section reveal" id="education">
+            <div class="section-header">
+                <span class="section-number">04.</span>
+                <h2 class="section-title"><span class="en">Education & Certifications</span><span class="es">Formación Académica</span></h2>
+            </div>
+
+            <div class="grid-2">
+                <div class="card" style="background: transparent; border: none; padding: 0;">
+                    <div class="timeline-item" style="padding-bottom: 2rem;">
+                        <h3 class="card-title"><span class="en">Master in Cybersecurity</span><span class="es">Máster en Ciberseguridad</span></h3>
+                        <div class="card-subtitle"><span class="en">In Progress</span><span class="es">En curso</span></div>
+                    </div>
+                    <div class="timeline-item" style="padding-bottom: 2rem;">
+                        <h3 class="card-title"><span class="en">Computer Engineering Degree</span><span class="es">Grado en Ingeniería Informática</span></h3>
+                        <div class="card-subtitle">UCLM (Universidad de Castilla-La Mancha)</div>
+                        <p class="text-justify" style="font-size: 0.9rem;"><span class="en">Software Engineering Branch. Distinction (Matrícula de Honor) in Calculus.</span><span class="es">Rama Ingeniería de Software. Matrícula de Honor en Cálculo.</span></p>
+                    </div>
+                    <div class="timeline-item" style="border-left: transparent;">
+                        <h3 class="card-title"><span class="en">Google Cybersecurity Certificate</span><span class="es">Certificado Profesional en Ciberseguridad de Google</span></h3>
+                        <p class="text-justify" style="font-size: 0.9rem;"><span class="en">Preparation for CompTIA Security+ certification.</span><span class="es">Preparación para la obtención de la certificación CompTIA Security+.</span></p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title" style="margin-bottom: 1.5rem;"><span class="en">Languages & Global Exposure</span><span class="es">Idiomas y Perfil Internacional</span></h3>
+                    <ul class="feature-list">
+                        <li><strong><span class="en">Spanish:</span><span class="es">Español:</span></strong> <span class="en">Native</span><span class="es">Nativo</span></li>
+                        <li><strong><span class="en">English:</span><span class="es">Inglés:</span></strong> <span class="en">Professional working proficiency (C1 Advanced prep).</span><span class="es">Competencia profesional (Preparando C1).</span></li>
+                        <li style="margin-top: 1rem;" class="text-justify">
+                            <span class="en">International client service experience at trade fairs in Germany, combined with a technical working environment during the DLR placement in Braunschweig.</span>
+                            <span class="es">Experiencia práctica en atención al cliente internacional en ferias comerciales en Alemania, y entorno laboral técnico en el DLR.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <footer style="text-align: center; padding: 3rem 0; border-top: 1px solid var(--border-subtle); color: var(--text-secondary); font-family: 'Fira Code', monospace; font-size: 0.85rem;">
+            <p>Built with HTML, CSS & JS by Juan José Martínez</p>
+            <p style="margin-top: 0.5rem; color: var(--accent-cyan);">"Secure by Design"</p>
+        </footer>
+
     </div>
 
     <script>
-        // Efecto Máquina de Escribir (Terminal)
-        const textES = "> Hola, soy Juan José Martínez.\n> Graduado en Ingeniería Informática y Máster en Ciberseguridad.\n> Especializado en arquitecturas de alto rendimiento y 'Secure by Design'.\n> _";
-        const textEN = "> Hi, I'm Juan José Martínez.\n> Computer Engineering grad & Master in Cybersecurity.\n> Specializing in high-performance architectures & 'Secure by Design'.\n> _";
+        // TYPEWRITER EFFECT
+        const textES = "> I build secure, high-performance software.";
+        const textEN = "> I build secure, high-performance software.";
+        // Usamos el mismo texto técnico en ambos idiomas para mantener el toque "hacker", pero puedes modificarlo.
         
-        let currentLang = 'es';
         const typeWriterElement = document.getElementById('typewriter');
-        let typeInterval;
-
-        function typeWriter(text, i) {
-            if (i < text.length) {
-                typeWriterElement.innerHTML = text.substring(0, i+1).replace(/\n/g, '<br>');
-                typeInterval = setTimeout(() => typeWriter(text, i + 1), 40);
+        let i = 0;
+        
+        function typeWriter() {
+            if (i < textEN.length) {
+                typeWriterElement.innerHTML += textEN.charAt(i);
+                i++;
+                setTimeout(typeWriter, 50);
             }
         }
-
-        function startTyping() {
-            clearTimeout(typeInterval);
-            typeWriterElement.innerHTML = '';
-            typeWriter(currentLang === 'es' ? textES : textEN, 0);
-        }
-
+        
         // Iniciar al cargar
-        window.onload = startTyping;
+        window.addEventListener('load', () => {
+            setTimeout(typeWriter, 500);
+        });
 
-        // Cambio de Idioma
+        // SCROLL REVEAL ANIMATION
+        function reveal() {
+            var reveals = document.querySelectorAll(".reveal");
+            for (var j = 0; j < reveals.length; j++) {
+                var windowHeight = window.innerHeight;
+                var elementTop = reveals[j].getBoundingClientRect().top;
+                var elementVisible = 150;
+                if (elementTop < windowHeight - elementVisible) {
+                    reveals[j].classList.add("active");
+                }
+            }
+        }
+        window.addEventListener("scroll", reveal);
+        reveal();
+
+        // LANGUAGE TOGGLE
+        let currentLang = 'en';
         function toggleLang() {
-            currentLang = currentLang === 'es' ? 'en' : 'es';
+            currentLang = currentLang === 'en' ? 'es' : 'en';
             
-            document.querySelectorAll('.es').forEach(el => el.style.display = currentLang === 'es' ? 'block' : 'none');
-            document.querySelectorAll('.en').forEach(el => el.style.display = currentLang === 'en' ? 'block' : 'none');
+            document.querySelectorAll('.en').forEach(el => el.style.display = currentLang === 'en' ? 'inline-block' : 'none');
+            document.querySelectorAll('.es').forEach(el => el.style.display = currentLang === 'es' ? 'inline-block' : 'none');
             
-            // Especial para elementos que son in-line (como los títulos de bento boxes)
-            document.querySelectorAll('.bento-title.es, .job-title.es').forEach(el => el.style.display = currentLang === 'es' ? 'block' : 'none');
-            document.querySelectorAll('.bento-title.en, .job-title.en').forEach(el => el.style.display = currentLang === 'en' ? 'block' : 'none');
-
-            startTyping();
+            // Especial para bloques
+            document.querySelectorAll('li.en, p.en, div.en').forEach(el => el.style.display = currentLang === 'en' ? 'block' : 'none');
+            document.querySelectorAll('li.es, p.es, div.es').forEach(el => el.style.display = currentLang === 'es' ? 'block' : 'none');
         }
     </script>
 </body>
