@@ -1,461 +1,976 @@
 <!DOCTYPE html>
-<html lang="es" class="scroll-smooth">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Juan José Martínez | Software & Security Engineer</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juan José Martínez — Ground Station</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* =========================================================
+   DESIGN TOKENS
+   ========================================================= */
+:root{
+  --void:#0A0A0A;          /* deep space black */
+  --void-2:#0d100e;        /* lifted panel base */
+  --panel:rgba(14,18,16,0.55);
+  --grid:rgba(0,255,65,0.045);
+  --grid-strong:rgba(0,255,65,0.10);
+  --terminal:#00FF41;      /* terminal green */
+  --terminal-dim:rgba(0,255,65,0.55);
+  --rust:#FF5722;          /* aerospace rust orange */
+  --rust-dim:rgba(255,87,34,0.6);
+  --steel:#8a9ba0;         /* muted secondary */
+  --steel-dim:rgba(138,155,160,0.5);
+  --bone:#e9efec;          /* near-white body */
+  --hud-line:rgba(0,255,65,0.18);
+  --hud-line-rust:rgba(255,87,34,0.25);
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --sans:'Inter',system-ui,sans-serif;
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
 
-    <style>
-        :root {
-            --bg-base: #050505;
-            --bg-surface: #0a0a0a;
-            --bg-card: #121212;
-            --border-subtle: rgba(255, 255, 255, 0.08);
-            --border-hover: rgba(0, 229, 255, 0.3);
-            --text-primary: #f3f4f6;
-            --text-secondary: #9ca3af;
-            --accent-cyan: #00e5ff;
-            --accent-blue: #3b82f6;
-            --glow: 0 0 25px rgba(0, 229, 255, 0.1);
-        }
+/* =========================================================
+   RESET
+   ========================================================= */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--void);
+  color:var(--bone);
+  font-family:var(--sans);
+  line-height:1.6;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+a{color:inherit;text-decoration:none}
+img,svg{display:block}
+::selection{background:var(--rust);color:var(--void)}
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+/* =========================================================
+   CUSTOM CURSOR — telemetry radar reticle
+   (only on fine pointers; touch devices keep native cursor)
+   ========================================================= */
+@media (pointer:fine){
+  body{cursor:none}
+  a,button,.is-interactive{cursor:none}
+}
+.cursor{
+  position:fixed;top:0;left:0;
+  width:38px;height:38px;
+  margin:-19px 0 0 -19px;
+  border:1px solid var(--terminal-dim);
+  border-radius:50%;
+  pointer-events:none;z-index:9999;
+  transition:width .22s var(--ease),height .22s var(--ease),
+             margin .22s var(--ease),border-color .22s var(--ease),
+             transform .22s var(--ease),opacity .25s;
+  mix-blend-mode:screen;
+  display:none;
+}
+/* crosshair lines */
+.cursor::before,.cursor::after{
+  content:'';position:absolute;background:var(--terminal-dim);
+  transition:background .22s var(--ease);
+}
+.cursor::before{left:50%;top:-6px;bottom:-6px;width:1px;transform:translateX(-.5px)}
+.cursor::after{top:50%;left:-6px;right:-6px;height:1px;transform:translateY(-.5px)}
+/* tick marks via the dot element */
+.cursor-dot{
+  position:fixed;top:0;left:0;width:4px;height:4px;margin:-2px 0 0 -2px;
+  background:var(--rust);border-radius:50%;pointer-events:none;z-index:9999;display:none;
+  box-shadow:0 0 6px var(--rust);
+}
+.cursor.hot{
+  width:62px;height:62px;margin:-31px 0 0 -31px;
+  border-color:var(--rust);
+  transform:rotate(45deg);
+  box-shadow:0 0 18px rgba(255,87,34,.25),inset 0 0 12px rgba(0,255,65,.12);
+}
+.cursor.hot::before,.cursor.hot::after{background:var(--terminal)}
+@media (pointer:fine){.cursor,.cursor-dot{display:block}}
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-base);
-            color: var(--text-primary);
-            line-height: 1.6;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
+/* =========================================================
+   AMBIENT BACKGROUND — faint mesh grid + vignette + stars
+   ========================================================= */
+.bg{position:fixed;inset:0;z-index:-3;pointer-events:none}
+.bg-grid{
+  position:absolute;inset:-2px;
+  background-image:
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:46px 46px;
+  mask-image:radial-gradient(ellipse 120% 90% at 50% 35%,#000 35%,transparent 100%);
+  -webkit-mask-image:radial-gradient(ellipse 120% 90% at 50% 35%,#000 35%,transparent 100%);
+}
+.bg-glow{
+  position:absolute;inset:0;
+  background:
+    radial-gradient(700px 500px at 80% 8%,rgba(255,87,34,.06),transparent 60%),
+    radial-gradient(900px 600px at 10% 60%,rgba(0,255,65,.05),transparent 60%);
+}
+.bg-vignette{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 90% 80% at 50% 40%,transparent 50%,rgba(0,0,0,.7) 100%);
+}
+.stars{position:fixed;inset:0;z-index:-2;pointer-events:none;will-change:transform}
+.star{position:absolute;background:#cfe;border-radius:50%;opacity:.0;animation:twinkle linear infinite}
+@keyframes twinkle{0%,100%{opacity:.12}50%{opacity:.7}}
 
-        /* Abstract Background Elements */
-        .bg-glow {
-            position: fixed;
-            width: 600px; height: 600px;
-            background: radial-gradient(circle, rgba(0, 229, 255, 0.03) 0%, transparent 70%);
-            top: -200px; right: -200px;
-            z-index: -1; pointer-events: none;
-        }
+/* scanline overlay (very subtle) */
+.scanlines{
+  position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.35;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,0,0,.18) 3px);
+  mix-blend-mode:multiply;
+}
 
-        /* Navigation */
-        nav {
-            position: fixed; top: 0; width: 100%;
-            background: rgba(5, 5, 5, 0.85);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border-subtle);
-            padding: 1.2rem 5%; z-index: 100;
-            display: flex; justify-content: space-between; align-items: center;
-        }
+/* =========================================================
+   FLOATING JUNK SATELLITE (signature ambient element)
+   ========================================================= */
+.sat-stage{
+  position:fixed;z-index:-1;pointer-events:none;
+  top:14vh;right:7vw;width:300px;height:300px;
+  will-change:transform;
+  filter:drop-shadow(0 24px 40px rgba(0,0,0,.55));
+}
+.sat-float{animation:levitate 7s ease-in-out infinite}
+@keyframes levitate{
+  0%,100%{transform:translateY(0) rotate(-3deg)}
+  50%{transform:translateY(-26px) rotate(3deg)}
+}
+.sat-blink{animation:blink 1.6s steps(1) infinite}
+@keyframes blink{0%,60%{opacity:1}61%,100%{opacity:.15}}
+.thruster{transform-origin:center;animation:thrust 1.1s ease-in-out infinite}
+@keyframes thrust{0%,100%{opacity:.35;transform:scaleY(.85)}50%{opacity:.9;transform:scaleY(1.15)}}
+.dish-spin{transform-origin:50% 50%;animation:dish 14s linear infinite}
+@keyframes dish{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 
-        .logo { font-family: 'Fira Code', monospace; font-weight: 500; font-size: 1.1rem; }
-        .logo span { color: var(--accent-cyan); }
+/* =========================================================
+   HUD TOP BAR
+   ========================================================= */
+.hud{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:18px;padding:12px clamp(16px,4vw,46px);
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+  background:linear-gradient(180deg,rgba(10,10,10,.92),rgba(10,10,10,.5));
+  border-bottom:1px solid var(--hud-line);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.hud-callsign{display:flex;align-items:center;gap:10px;color:var(--terminal);text-transform:uppercase}
+.hud-callsign .pip{width:8px;height:8px;border-radius:50%;background:var(--terminal);box-shadow:0 0 10px var(--terminal);animation:blink 2s steps(1) infinite}
+.hud-tele{display:flex;gap:clamp(10px,2.5vw,30px);color:var(--steel);text-transform:uppercase}
+.hud-tele b{color:var(--bone);font-weight:500}
+.hud-tele .k{color:var(--rust);margin-right:6px}
+.hud-tele .cell{white-space:nowrap}
+.hud-right{display:flex;align-items:center;gap:14px}
+.lang-toggle{
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  display:flex;border:1px solid var(--hud-line-rust);border-radius:2px;overflow:hidden;
+  background:rgba(255,87,34,.04);
+}
+.lang-toggle button{
+  background:none;border:none;color:var(--steel);
+  padding:6px 11px;font-family:inherit;font-size:inherit;letter-spacing:inherit;
+  transition:.2s var(--ease);
+}
+.lang-toggle button.active{background:var(--rust);color:var(--void);font-weight:700}
+.lang-toggle button:not(.active):hover{color:var(--bone)}
+@media (max-width:760px){.hud-tele .opt{display:none}}
+@media (max-width:520px){.hud-tele{display:none}}
 
-        .nav-controls { display: flex; gap: 1rem; align-items: center; }
-        
-        .btn-lang {
-            background: transparent; color: var(--text-secondary);
-            border: 1px solid var(--border-subtle);
-            padding: 0.4rem 0.8rem; border-radius: 6px;
-            font-family: 'Fira Code', monospace; font-size: 0.85rem;
-            cursor: pointer; transition: all 0.3s;
-        }
-        .btn-lang:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+/* corner brackets for HUD frame feel */
+.frame-corner{position:fixed;width:26px;height:26px;z-index:90;pointer-events:none;border-color:var(--hud-line-rust);}
+.fc-tl{top:54px;left:14px;border-top:1px solid;border-left:1px solid}
+.fc-tr{top:54px;right:14px;border-top:1px solid;border-right:1px solid}
+.fc-bl{bottom:14px;left:14px;border-bottom:1px solid;border-left:1px solid}
+.fc-br{bottom:14px;right:14px;border-bottom:1px solid;border-right:1px solid}
+@media (max-width:640px){.frame-corner{display:none}}
 
-        .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+/* =========================================================
+   LAYOUT
+   ========================================================= */
+.wrap{max-width:1120px;margin:0 auto;padding:0 clamp(18px,5vw,40px)}
+section{position:relative;padding:clamp(70px,11vh,130px) 0}
+.eyebrow{
+  font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--rust);display:inline-flex;align-items:center;gap:12px;margin-bottom:22px;
+}
+.eyebrow::before{content:'';width:34px;height:1px;background:var(--rust)}
+.eyebrow .idx{color:var(--terminal)}
 
-        /* Typography */
-        h1, h2, h3 { font-weight: 600; }
-        .mono { font-family: 'Fira Code', monospace; }
-        .text-accent { color: var(--accent-cyan); }
+/* =========================================================
+   HERO
+   ========================================================= */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding-top:120px}
+.hero-tag{
+  font-family:var(--mono);font-size:12px;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--terminal);margin-bottom:26px;display:inline-flex;align-items:center;gap:10px;
+}
+.hero-tag .dot{width:7px;height:7px;border-radius:50%;background:var(--terminal);box-shadow:0 0 10px var(--terminal);animation:blink 1.8s steps(1) infinite}
+.hero h1{
+  font-family:var(--mono);font-weight:800;line-height:.96;letter-spacing:-.02em;
+  font-size:clamp(2.6rem,8.5vw,6.4rem);text-transform:uppercase;
+  position:relative;display:inline-block;cursor:pointer;
+}
+.hero h1 .ln{display:block}
+.hero h1 .accent{color:var(--terminal)}
+/* GLITCH — RGB split on hover */
+.glitch{position:relative}
+.glitch::before,.glitch::after{
+  content:attr(data-text);position:absolute;inset:0;
+  opacity:0;pointer-events:none;
+}
+.glitch:hover::before{
+  opacity:.85;color:var(--rust);left:3px;
+  clip-path:inset(0 0 62% 0);animation:glitchA .42s steps(2) infinite;
+}
+.glitch:hover::after{
+  opacity:.85;color:#00e5ff;left:-3px;
+  clip-path:inset(58% 0 0 0);animation:glitchB .38s steps(2) infinite;
+}
+@keyframes glitchA{0%{transform:translate(0)}25%{transform:translate(-4px,1px)}50%{transform:translate(3px,-2px)}75%{transform:translate(-2px,2px)}100%{transform:translate(0)}}
+@keyframes glitchB{0%{transform:translate(0)}25%{transform:translate(4px,-1px)}50%{transform:translate(-3px,2px)}75%{transform:translate(2px,-2px)}100%{transform:translate(0)}}
+.hero-role{font-family:var(--mono);font-size:clamp(.85rem,2vw,1.05rem);letter-spacing:.18em;color:var(--rust);text-transform:uppercase;margin:24px 0 18px}
+.hero-sub{max-width:560px;color:var(--steel);font-size:clamp(1rem,2.2vw,1.12rem)}
+.hero-sub b{color:var(--bone);font-weight:600}
+.hero-cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:38px}
+.btn{
+  font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;
+  padding:14px 24px;border-radius:2px;position:relative;overflow:hidden;
+  transition:.25s var(--ease);
+}
+.btn-primary{background:var(--rust);color:var(--void);font-weight:700}
+.btn-primary:hover{box-shadow:0 0 26px rgba(255,87,34,.45);transform:translateY(-2px)}
+.btn-ghost{border:1px solid var(--hud-line);color:var(--terminal)}
+.btn-ghost:hover{background:rgba(0,255,65,.07);border-color:var(--terminal);transform:translateY(-2px)}
 
-        /* Hero Section */
-        .hero {
-            min-height: 100vh;
-            display: flex; flex-direction: column; justify-content: center;
-            padding-top: 5rem;
-        }
+/* skill ticker */
+.ticker{margin-top:60px;border-top:1px solid var(--hud-line);border-bottom:1px solid var(--hud-line);overflow:hidden;padding:12px 0;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.ticker-track{display:inline-flex;white-space:nowrap;animation:scroll-x 34s linear infinite;will-change:transform}
+.ticker-track span{font-family:var(--mono);font-size:13px;letter-spacing:.14em;color:var(--steel);text-transform:uppercase;padding:0 26px}
+.ticker-track span i{color:var(--terminal);font-style:normal;margin-right:8px}
+@keyframes scroll-x{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-        .hero-intro { font-size: 1.1rem; margin-bottom: 1rem; }
-        .hero h1 { font-size: clamp(3rem, 6vw, 4.5rem); letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 1.5rem; }
-        
-        .typewriter-container {
-            font-family: 'Fira Code', monospace;
-            font-size: clamp(1rem, 2vw, 1.3rem);
-            color: var(--text-secondary);
-            margin-bottom: 2.5rem; min-height: 60px;
-        }
-        .cursor { display: inline-block; width: 8px; height: 20px; background: var(--accent-cyan); animation: blink 1s step-end infinite; vertical-align: text-bottom;}
-        @keyframes blink { 50% { opacity: 0; } }
+/* =========================================================
+   PANEL / CARD — glassmorphism HUD
+   ========================================================= */
+.panel{
+  position:relative;
+  background:var(--panel);
+  border:1px solid var(--hud-line);
+  border-radius:4px;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:clamp(22px,3vw,34px);
+}
+/* HUD corner ticks on panels */
+.panel::before,.panel::after{content:'';position:absolute;width:14px;height:14px;pointer-events:none}
+.panel::before{top:-1px;left:-1px;border-top:2px solid var(--rust);border-left:2px solid var(--rust)}
+.panel::after{bottom:-1px;right:-1px;border-bottom:2px solid var(--rust);border-bottom-color:var(--rust);border-right:2px solid var(--rust)}
 
-        .hero-links { display: flex; gap: 1.5rem; flex-wrap: wrap; }
-        .hero-links a {
-            color: var(--text-primary); text-decoration: none;
-            display: flex; align-items: center; gap: 8px;
-            padding: 0.6rem 1.2rem; border-radius: 8px;
-            border: 1px solid var(--border-subtle);
-            background: var(--bg-surface);
-            transition: all 0.3s; font-size: 0.95rem;
-        }
-        .hero-links a:hover { border-color: var(--accent-cyan); transform: translateY(-2px); box-shadow: var(--glow); }
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+@media (max-width:860px){.grid-2,.grid-3{grid-template-columns:1fr}}
 
-        /* Section Layouts */
-        .section { padding: 6rem 0; border-top: 1px solid var(--border-subtle); }
-        .section-header {
-            display: flex; align-items: baseline; gap: 1.5rem; margin-bottom: 3rem;
-        }
-        .section-number { font-family: 'Fira Code', monospace; color: var(--accent-cyan); font-size: 1.2rem; }
-        .section-title { font-size: 2rem; }
+/* =========================================================
+   PROFILE
+   ========================================================= */
+.profile-body{font-size:1.08rem;color:var(--bone);max-width:760px}
+.profile-body .hl{color:var(--terminal);font-family:var(--mono);font-size:.95em}
+.profile-meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}
+.chip{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);border:1px solid var(--hud-line);padding:7px 13px;border-radius:2px}
+.chip b{color:var(--rust);font-weight:700}
 
-        /* Grid Framework */
-        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+/* =========================================================
+   SKILLS / SYSTEMS CHECK
+   ========================================================= */
+.sys-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.sys-head h3{font-family:var(--mono);font-size:14px;letter-spacing:.12em;text-transform:uppercase;color:var(--terminal)}
+.sys-head .pct{font-family:var(--mono);font-size:12px;color:var(--rust)}
+.bar{height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-bottom:18px}
+.bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--terminal),var(--rust));border-radius:3px;width:0;transition:width 1.1s var(--ease)}
+.is-in .bar > i{width:var(--w)}
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.tag{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--steel);background:rgba(0,255,65,.05);border:1px solid var(--hud-line);padding:5px 10px;border-radius:2px;transition:.2s var(--ease)}
+.tag:hover{color:var(--terminal);border-color:var(--terminal-dim);transform:translateY(-2px)}
 
-        /* Cards & UI Elements */
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px; padding: 2rem;
-            transition: all 0.3s;
-        }
-        .card:hover { border-color: var(--border-hover); transform: translateY(-4px); }
-        
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
-        .card-icon { font-size: 1.5rem; color: var(--accent-cyan); }
-        .card-title { font-size: 1.2rem; margin-bottom: 0.5rem; color: #fff; }
-        .card-subtitle { font-family: 'Fira Code', monospace; font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 1rem; }
-        
-        /* Lists & Tags */
-        .feature-list { list-style: none; color: var(--text-secondary); font-size: 0.95rem; }
-        .feature-list li { position: relative; padding-left: 1.5rem; margin-bottom: 0.8rem; }
-        .feature-list li::before { content: "▹"; position: absolute; left: 0; color: var(--accent-cyan); }
+/* =========================================================
+   MISSION LOG / EXPERIENCE
+   ========================================================= */
+.mission{margin-bottom:20px}
+.mission-top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px}
+.mission h3{font-family:var(--mono);font-size:1.12rem;letter-spacing:.01em;color:var(--bone)}
+.mission .org{font-family:var(--mono);font-size:12.5px;letter-spacing:.05em;color:var(--rust);margin-bottom:4px}
+.mission .meta{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.mission .date{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;color:var(--steel);text-transform:uppercase}
+.status{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:3px 9px;border-radius:2px}
+.status.active{color:var(--void);background:var(--terminal);box-shadow:0 0 12px rgba(0,255,65,.4)}
+.status.done{color:var(--steel);border:1px solid var(--steel-dim)}
+.mission ul{list-style:none;margin-top:14px;display:grid;gap:9px}
+.mission li{position:relative;padding-left:20px;color:var(--steel);font-size:.97rem}
+.mission li::before{content:'▸';position:absolute;left:0;color:var(--rust)}
+.mission li b{color:var(--bone);font-weight:600}
+.mission + .mission{border-top:1px dashed var(--hud-line);padding-top:24px}
 
-        .tag-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1.5rem; }
-        .tag {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-subtle);
-            color: var(--text-secondary);
-            padding: 4px 10px; border-radius: 4px;
-            font-size: 0.8rem; font-family: 'Fira Code', monospace;
-        }
+/* =========================================================
+   HANGAR / PROJECTS
+   ========================================================= */
+.hangar-card{height:100%;display:flex;flex-direction:column;transition:.3s var(--ease)}
+.hangar-card:hover{transform:translateY(-5px);border-color:var(--terminal-dim);box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.hangar-card .ico{width:40px;height:40px;margin-bottom:16px;color:var(--terminal)}
+.hangar-card h3{font-family:var(--mono);font-size:1.02rem;color:var(--bone);margin-bottom:8px;letter-spacing:.02em}
+.hangar-card p{color:var(--steel);font-size:.95rem;flex:1}
+.hangar-card .stack{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--rust);margin-top:16px;text-transform:uppercase}
 
-        /* Timeline specific */
-        .timeline-item { padding-bottom: 3rem; border-left: 1px solid var(--border-subtle); padding-left: 2rem; position: relative; }
-        .timeline-item::before {
-            content: ''; position: absolute; left: -5px; top: 0;
-            width: 9px; height: 9px; border-radius: 50%;
-            background: var(--accent-cyan); box-shadow: 0 0 10px var(--accent-cyan);
-        }
+/* =========================================================
+   CREDENTIALS / EDUCATION + LANGUAGES
+   ========================================================= */
+.cred{display:flex;gap:16px;align-items:flex-start;padding:18px 0}
+.cred + .cred{border-top:1px dashed var(--hud-line)}
+.cred .node{flex:none;width:11px;height:11px;border-radius:50%;border:2px solid var(--rust);margin-top:6px}
+.cred .node.live{background:var(--terminal);border-color:var(--terminal);box-shadow:0 0 10px var(--terminal)}
+.cred h3{font-family:var(--mono);font-size:1rem;color:var(--bone);letter-spacing:.01em}
+.cred .sub{color:var(--steel);font-size:.92rem;margin-top:3px}
+.cred .badge{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--terminal);margin-top:6px;display:inline-block}
 
-        /* Utilities */
-        .es { display: none; }
-        .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s ease-out; }
-        .reveal.active { opacity: 1; transform: translateY(0); }
-        .text-justify { text-align: justify; color: var(--text-secondary); margin-bottom: 1rem; }
-    </style>
+.lang-row{display:flex;align-items:center;gap:16px;margin-bottom:18px}
+.lang-row .name{font-family:var(--mono);font-size:13px;letter-spacing:.06em;color:var(--bone);width:84px;text-transform:uppercase}
+.lang-row .lvl{flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.lang-row .lvl > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--terminal),var(--rust));transition:width 1.1s var(--ease)}
+.is-in .lang-row .lvl > i{width:var(--w)}
+.lang-row .tier{font-family:var(--mono);font-size:11px;color:var(--rust);letter-spacing:.08em}
+.lang-note{color:var(--steel);font-size:.92rem;margin-top:6px}
+
+/* =========================================================
+   CONTACT / COMMS
+   ========================================================= */
+.comms{text-align:center}
+.comms h2{font-family:var(--mono);font-weight:800;text-transform:uppercase;font-size:clamp(1.8rem,5vw,3rem);letter-spacing:-.01em;margin-bottom:14px}
+.comms h2 .accent{color:var(--rust)}
+.comms p{color:var(--steel);max-width:520px;margin:0 auto 34px}
+.comms-links{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
+.comm{
+  font-family:var(--mono);font-size:13px;letter-spacing:.06em;
+  border:1px solid var(--hud-line);padding:13px 20px;border-radius:2px;
+  color:var(--bone);transition:.25s var(--ease);display:inline-flex;align-items:center;gap:10px;
+}
+.comm:hover{border-color:var(--rust);color:var(--rust);transform:translateY(-3px);box-shadow:0 0 22px rgba(255,87,34,.2)}
+.comm .k{color:var(--terminal)}
+
+footer{border-top:1px solid var(--hud-line);padding:28px 0 38px;text-align:center}
+footer p{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--steel-dim);text-transform:uppercase}
+
+/* =========================================================
+   SCROLL REVEAL
+   ========================================================= */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.reveal.is-in{opacity:1;transform:none}
+.reveal[data-d="1"]{transition-delay:.08s}
+.reveal[data-d="2"]{transition-delay:.16s}
+.reveal[data-d="3"]{transition-delay:.24s}
+
+:focus-visible{outline:2px solid var(--terminal);outline-offset:3px}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .reveal{opacity:1;transform:none}
+  .bar > i,.lang-row .lvl > i{width:var(--w)!important}
+}
+</style>
 </head>
 <body>
 
-    <div class="bg-glow"></div>
+<!-- CUSTOM CURSOR -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-dot" id="cursorDot"></div>
 
-    <nav>
-        <div class="logo">JuanJosé<span class="mono">.dev</span></div>
-        <div class="nav-controls">
-            <button class="btn-lang" onclick="toggleLang()">EN / ES</button>
-        </div>
-    </nav>
+<!-- AMBIENT BACKGROUND -->
+<div class="bg">
+  <div class="bg-grid"></div>
+  <div class="bg-glow"></div>
+  <div class="bg-vignette"></div>
+</div>
+<div class="stars" id="stars"></div>
+<div class="scanlines"></div>
 
-    <div class="container">
-        
-        <section class="hero">
-            <div class="hero-intro mono text-accent"><span class="en">Hello, my name is</span><span class="es">Hola, mi nombre es</span></div>
-            <h1>Juan José Martínez.</h1>
-            
-            <div class="typewriter-container">
-                <span id="typewriter"></span><span class="cursor"></span>
-            </div>
+<!-- FLOATING JUNK SATELLITE -->
+<div class="sat-stage" id="satStage" aria-hidden="true">
+  <div class="sat-float">
+    <svg viewBox="0 0 300 300" width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#3a4148"/>
+          <stop offset="0.5" stop-color="#22272b"/>
+          <stop offset="1" stop-color="#14181b"/>
+        </linearGradient>
+        <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#0a2a14"/>
+          <stop offset="1" stop-color="#04130a"/>
+        </linearGradient>
+        <radialGradient id="flame" cx="0.5" cy="0" r="1">
+          <stop offset="0" stop-color="#FF5722"/>
+          <stop offset="0.6" stop-color="#FF8a4d" stop-opacity="0.5"/>
+          <stop offset="1" stop-color="#FF5722" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
 
-            <div class="text-justify" style="max-width: 700px; margin-bottom: 2.5rem; font-size: 1.05rem;">
-                <span class="en">Computer Engineering graduate specializing in advanced frontend architectures and secure full-stack development. Currently pursuing a Master's in Cybersecurity, blending high-performance software engineering with strict "Secure by Design" principles.</span>
-                <span class="es">Graduado en Ingeniería Informática especializado en arquitecturas frontend avanzadas y desarrollo full-stack. Actualmente cursando un Máster en Ciberseguridad, combinando el desarrollo de software de alto rendimiento con prácticas de seguridad desde el diseño (Secure by Design).</span>
-            </div>
+      <!-- left solar panel boom + panel (slightly bent) -->
+      <rect x="36" y="146" width="60" height="8" fill="#2a3036"/>
+      <g transform="rotate(-7 50 150)">
+        <rect x="6" y="118" width="56" height="66" rx="2" fill="url(#panel)" stroke="#1f5a30" stroke-width="1.5"/>
+        <line x1="20" y1="118" x2="20" y2="184" stroke="#0f3a1d" stroke-width="1"/>
+        <line x1="34" y1="118" x2="34" y2="184" stroke="#0f3a1d" stroke-width="1"/>
+        <line x1="48" y1="118" x2="48" y2="184" stroke="#0f3a1d" stroke-width="1"/>
+        <line x1="6" y1="140" x2="62" y2="140" stroke="#0f3a1d" stroke-width="1"/>
+        <line x1="6" y1="162" x2="62" y2="162" stroke="#0f3a1d" stroke-width="1"/>
+        <!-- cracked corner -->
+        <path d="M52 178 L62 184 L52 184 Z" fill="#02100a"/>
+      </g>
 
-            <div class="hero-links">
-                <a href="mailto:juanjmartinezm55@gmail.com"><i class="fa-regular fa-envelope"></i> juanjmartinezm55@gmail.com</a>
-                <a href="tel:+34657149602"><i class="fa-solid fa-phone"></i> +34 657 149 602</a>
-                <a href="https://www.linkedin.com/in/juanjosemartinezmartinez55" target="_blank"><i class="fa-brands fa-linkedin-in"></i> LinkedIn</a>
-            </div>
-        </section>
+      <!-- right solar panel boom + panel -->
+      <rect x="204" y="146" width="60" height="8" fill="#2a3036"/>
+      <g transform="rotate(5 250 150)">
+        <rect x="238" y="120" width="56" height="62" rx="2" fill="url(#panel)" stroke="#1f5a30" stroke-width="1.5"/>
+        <line x1="252" y1="120" x2="252" y2="182" stroke="#0f3a1d" stroke-width="1"/>
+        <line x1="266" y1="120" x2="266" y2="182" stroke="#0f3a1d" stroke-width="1"/>
+        <line x1="280" y1="120" x2="280" y2="182" stroke="#0f3a1d" stroke-width="1"/>
+        <line x1="238" y1="142" x2="294" y2="142" stroke="#0f3a1d" stroke-width="1"/>
+        <line x1="238" y1="162" x2="294" y2="162" stroke="#0f3a1d" stroke-width="1"/>
+      </g>
 
-        <section class="section reveal" id="expertise">
-            <div class="section-header">
-                <span class="section-number">01.</span>
-                <h2 class="section-title"><span class="en">Technical Expertise</span><span class="es">Dominio Técnico</span></h2>
-            </div>
+      <!-- main body (battered hex/ box) -->
+      <path d="M112 110 L188 110 L206 150 L188 196 L112 196 L94 150 Z"
+            fill="url(#metal)" stroke="#FF5722" stroke-width="1.2" stroke-opacity="0.5"/>
+      <!-- panel lines + rivets -->
+      <line x1="112" y1="132" x2="188" y2="132" stroke="#0c1013" stroke-width="2"/>
+      <line x1="112" y1="172" x2="188" y2="172" stroke="#0c1013" stroke-width="2"/>
+      <circle cx="120" cy="120" r="2" fill="#454c52"/>
+      <circle cx="180" cy="120" r="2" fill="#454c52"/>
+      <circle cx="120" cy="186" r="2" fill="#454c52"/>
+      <circle cx="180" cy="186" r="2" fill="#454c52"/>
+      <!-- duct-tape patch (scrap-punk) -->
+      <rect x="128" y="144" width="34" height="18" rx="1" fill="#c75b2e" opacity="0.85" transform="rotate(-4 145 153)"/>
+      <line x1="130" y1="148" x2="160" y2="148" stroke="#8a3d1d" stroke-width="1" transform="rotate(-4 145 153)"/>
+      <!-- decal -->
+      <text x="150" y="184" font-family="'JetBrains Mono',monospace" font-size="9" fill="#00FF41" text-anchor="middle" opacity="0.8">EXP-01</text>
 
-            <div class="grid-3">
-                <div class="card">
-                    <i class="fa-solid fa-layer-group card-icon" style="margin-bottom: 1rem;"></i>
-                    <h3 class="card-title"><span class="en">Software Architecture</span><span class="es">Arquitectura de Software</span></h3>
-                    <ul class="feature-list">
-                        <li>Java, C, C#, Python</li>
-                        <li>TypeScript / JavaScript</li>
-                        <li>React & Lit (Web Components)</li>
-                        <li>Apache ECharts & Vite</li>
-                        <li>PHP, Laravel, Livewire, Filament</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <i class="fa-solid fa-shield-halved card-icon" style="margin-bottom: 1rem;"></i>
-                    <h3 class="card-title"><span class="en">Security & AppSec</span><span class="es">Seguridad y AppSec</span></h3>
-                    <ul class="feature-list">
-                        <li>"Secure by Design" Methodologies</li>
-                        <li>Frontend Validation (Zod, DOMPurify)</li>
-                        <li>Offensive Security Concepts</li>
-                        <li>WiFi Auditing (CSI)</li>
-                        <li>Threat Modeling</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <i class="fa-solid fa-server card-icon" style="margin-bottom: 1rem;"></i>
-                    <h3 class="card-title"><span class="en">Infrastructure & Data</span><span class="es">Infraestructura y Datos</span></h3>
-                    <ul class="feature-list">
-                        <li>Advanced SQL & ER Modeling</li>
-                        <li>VPS Administration (Linux)</li>
-                        <li>Docker Containerization</li>
-                        <li>CI/CD, Git & QA Testing</li>
-                        <li>Agile (Scrum / Kanban / Jira)</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
+      <!-- antenna mast + spinning dish -->
+      <line x1="150" y1="110" x2="150" y2="78" stroke="#3a4148" stroke-width="3"/>
+      <g class="dish-spin" transform="translate(150 70)">
+        <ellipse cx="0" cy="0" rx="22" ry="9" fill="none" stroke="#5a636b" stroke-width="2"/>
+        <ellipse cx="0" cy="0" rx="13" ry="5" fill="none" stroke="#3a4148" stroke-width="1.5"/>
+        <line x1="0" y1="0" x2="0" y2="-12" stroke="#5a636b" stroke-width="1.5"/>
+        <circle cx="0" cy="-12" r="2.5" fill="#FF5722"/>
+      </g>
 
-        <section class="section reveal" id="experience">
-            <div class="section-header">
-                <span class="section-number">02.</span>
-                <h2 class="section-title"><span class="en">Where I've Worked</span><span class="es">Experiencia Profesional</span></h2>
-            </div>
+      <!-- status light -->
+      <circle class="sat-blink" cx="170" cy="150" r="3.5" fill="#00FF41"/>
 
-            <div>
-                <div class="timeline-item">
-                    <h3 class="card-title">
-                        <span class="en">Software Engineer Intern (Visual Computing)</span>
-                        <span class="es">Ingeniero de Software en Prácticas (Visual Computing)</span> 
-                        <span class="text-accent">@ DLR</span>
-                    </h3>
-                    <div class="card-subtitle">Braunschweig, Germany | May 2026 - Aug 2026</div>
-                    <ul class="feature-list">
-                        <li class="en">R&D of the VVAFER framework for an interactive satellite telemetry dashboard ("dlr-satellite-dashboard").</li>
-                        <li class="es">Investigación y desarrollo del framework VVAFER para el panel de control interactivo de telemetría de satélites ("dlr-satellite-dashboard").</li>
-                        
-                        <li class="en">Designed a decoupled 4-layer frontend architecture integrating React Virtual DOM with Lit Shadow DOM to optimize performance and tech agnosticism.</li>
-                        <li class="es">Diseño e implementación de una arquitectura frontend desacoplada de 4 capas, integrando el Virtual DOM de React con el Shadow DOM de Lit.</li>
-                        
-                        <li class="en">Applied "Defense in Depth" principles, implementing schema validation (Zod) and sanitization (DOMPurify) to proactively mitigate XSS injection vulnerabilities.</li>
-                        <li class="es">Aplicación de ciberseguridad "Defense in Depth", implementando middleware de validación (Zod) y sanitización (DOMPurify) contra XSS.</li>
-                        
-                        <li class="en">Data visualization of complex telemetry using Apache ECharts and TypeScript. Deployed on Linux VPS environments.</li>
-                        <li class="es">Visualización de datos complejos de telemetría con Apache ECharts y TS. Despliegue y administración de VPS Linux.</li>
-                    </ul>
-                </div>
+      <!-- thruster + flame -->
+      <rect x="138" y="196" width="24" height="12" fill="#2a3036"/>
+      <path class="thruster" d="M138 208 L162 208 L150 240 Z" fill="url(#flame)"/>
 
-                <div class="timeline-item">
-                    <h3 class="card-title">
-                        <span class="en">Junior Software Developer</span>
-                        <span class="es">Desarrollador Junior</span> 
-                        <span class="text-accent">@ Knowmad Mood</span>
-                    </h3>
-                    <div class="card-subtitle"><span class="en">El Corte Inglés Project</span><span class="es">Proyecto El Corte Inglés</span></div>
-                    <ul class="feature-list">
-                        <li class="en">Analyzed and resolved critical production incidents for a major retailer ensuring system stability under high traffic.</li>
-                        <li class="es">Análisis y resolución de incidencias críticas de producción para un importante retailer, asegurando la estabilidad del sistema bajo alto tráfico.</li>
-                        <li class="en">Direct client contact for agile problem resolution within a Scrum framework.</li>
-                        <li class="es">Contacto directo con clientes para la resolución ágil de problemas en el marco de trabajo Scrum.</li>
-                    </ul>
-                </div>
+      <!-- loose hanging wire (scrap detail) -->
+      <path d="M188 150 q22 14 14 34" fill="none" stroke="#FF5722" stroke-width="1.2" stroke-opacity="0.6"/>
+      <circle cx="202" cy="184" r="2" fill="#FF5722"/>
+    </svg>
+  </div>
+</div>
 
-                <div class="timeline-item" style="border-left: transparent;">
-                    <h3 class="card-title">
-                        <span class="en">Full-Stack Developer</span>
-                        <span class="es">Desarrollador Full-Stack</span> 
-                        <span class="text-accent">@ Grubelgar S.L.</span>
-                    </h3>
-                    <div class="card-subtitle"><span class="en">Campervan Rental App</span><span class="es">App de Alquiler de Autocaravanas</span></div>
-                    <ul class="feature-list">
-                        <li class="en">Project technical lead using Kanban methodologies. Engineered an MVC/Service Layer architecture in Laravel.</li>
-                        <li class="es">Liderazgo del proyecto utilizando Kanban. Diseño de arquitectura MVC/Capa de Servicios y modelado escalable en Laravel.</li>
-                        <li class="en">Optimized UX via asynchronous logic (AJAX) during checkout and automated PDF/notification workflows.</li>
-                        <li class="es">Optimización de la UX mediante lógica asíncrona (AJAX) en pagos y automatización de PDFs y notificaciones.</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
+<!-- HUD TOP BAR -->
+<header class="hud">
+  <div class="hud-callsign"><span class="pip"></span><span data-i18n="hud.callsign">JJMM · GROUND STATION</span></div>
+  <div class="hud-tele">
+    <span class="cell opt"><span class="k">LAT</span><b id="telLat">40.31</b></span>
+    <span class="cell opt"><span class="k">LON</span><b id="telLon">-3.74</b></span>
+    <span class="cell"><span class="k">SIG</span><b id="telSig">98%</b></span>
+    <span class="cell"><span class="k" data-i18n="hud.up">UPLINK</span><b id="telUp">00:00:00</b></span>
+  </div>
+  <div class="hud-right">
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button id="btnEN" class="active" onclick="setLang('en')">EN</button>
+      <button id="btnES" onclick="setLang('es')">ES</button>
+    </div>
+  </div>
+</header>
 
-        <section class="section reveal" id="projects">
-            <div class="section-header">
-                <span class="section-number">03.</span>
-                <h2 class="section-title"><span class="en">Projects & Research</span><span class="es">Proyectos e Investigación</span></h2>
-            </div>
+<span class="frame-corner fc-tl"></span>
+<span class="frame-corner fc-tr"></span>
+<span class="frame-corner fc-bl"></span>
+<span class="frame-corner fc-br"></span>
 
-            <div class="grid-2">
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fa-solid fa-network-wired card-icon"></i>
-                        <a href="#" style="color: var(--text-secondary);"><i class="fa-brands fa-github"></i></a>
-                    </div>
-                    <h3 class="card-title"><span class="en">Master's Thesis: QML for IDS</span><span class="es">TFM: QML aplicado a IDS</span></h3>
-                    <p class="text-justify">
-                        <span class="en">Practical implementation of Quantum Machine Learning (QML) methodologies to enhance Intrusion Detection Systems (IDS), shifting from theoretical models to applied cybersecurity environments.</span>
-                        <span class="es">Implementación práctica de metodologías de Quantum Machine Learning (QML) para mejorar los Sistemas de Detección de Intrusos (IDS), pasando de la teoría a la aplicación en ciberseguridad.</span>
-                    </p>
-                    <div class="tag-group">
-                        <span class="tag">AI / ML</span><span class="tag">Quantum Computing</span><span class="tag">Cybersecurity</span>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fa-solid fa-microchip card-icon"></i>
-                    </div>
-                    <h3 class="card-title">Hardware & Home-Lab</h3>
-                    <p class="text-justify">
-                        <span class="en">Development of ESP32 networking experiments (WiFi Radar, Pwnagotchi). Deployed a private cloud using Docker (Nextcloud, Immich) secured via Tailscale VPN.</span>
-                        <span class="es">Desarrollo con ESP32 (WiFi Radar, Pwnagotchi). Despliegue de nube privada en Docker (Nextcloud, Immich) y red segura gestionada mediante VPN Tailscale.</span>
-                    </p>
-                    <div class="tag-group">
-                        <span class="tag">ESP32</span><span class="tag">Docker</span><span class="tag">Tailscale</span><span class="tag">Linux</span>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fa-solid fa-chart-line card-icon"></i>
-                    </div>
-                    <h3 class="card-title"><span class="en">Bachelor's Thesis: Admin Panel</span><span class="es">TFG: Panel de Administración</span></h3>
-                    <p class="text-justify">
-                        <span class="en">Design and implementation of a web administration panel for academic data visualization. Managed via Jira, incorporating rigorous unit and integration testing.</span>
-                        <span class="es">Diseño e implementación de un panel web para visualizaciones orientadas a la toma de decisiones académicas. Gestión con Jira y pruebas de integración/unitarias.</span>
-                    </p>
-                    <div class="tag-group">
-                        <span class="tag">PHP/XAMPP</span><span class="tag">Unit Testing</span><span class="tag">Jira</span>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fa-solid fa-gamepad card-icon"></i>
-                    </div>
-                    <h3 class="card-title">Mission Control: We Have a Problem</h3>
-                    <p class="text-justify">
-                        <span class="en">Development of a cooperative "scrap-punk" style video game utilizing advanced mechanics and system architecture.</span>
-                        <span class="es">Desarrollo de videojuego cooperativo de estilo "scrap-punk" implementando mecánicas avanzadas y arquitectura de sistemas.</span>
-                    </p>
-                    <div class="tag-group">
-                        <span class="tag">C++</span><span class="tag">Unreal Engine 5</span><span class="tag">Blueprints</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section class="section reveal" id="education">
-            <div class="section-header">
-                <span class="section-number">04.</span>
-                <h2 class="section-title"><span class="en">Education & Certifications</span><span class="es">Formación Académica</span></h2>
-            </div>
-
-            <div class="grid-2">
-                <div class="card" style="background: transparent; border: none; padding: 0;">
-                    <div class="timeline-item" style="padding-bottom: 2rem;">
-                        <h3 class="card-title"><span class="en">Master in Cybersecurity</span><span class="es">Máster en Ciberseguridad</span></h3>
-                        <div class="card-subtitle"><span class="en">In Progress</span><span class="es">En curso</span></div>
-                    </div>
-                    <div class="timeline-item" style="padding-bottom: 2rem;">
-                        <h3 class="card-title"><span class="en">Computer Engineering Degree</span><span class="es">Grado en Ingeniería Informática</span></h3>
-                        <div class="card-subtitle">UCLM (Universidad de Castilla-La Mancha)</div>
-                        <p class="text-justify" style="font-size: 0.9rem;"><span class="en">Software Engineering Branch. Distinction (Matrícula de Honor) in Calculus.</span><span class="es">Rama Ingeniería de Software. Matrícula de Honor en Cálculo.</span></p>
-                    </div>
-                    <div class="timeline-item" style="border-left: transparent;">
-                        <h3 class="card-title"><span class="en">Google Cybersecurity Certificate</span><span class="es">Certificado Profesional en Ciberseguridad de Google</span></h3>
-                        <p class="text-justify" style="font-size: 0.9rem;"><span class="en">Preparation for CompTIA Security+ certification.</span><span class="es">Preparación para la obtención de la certificación CompTIA Security+.</span></p>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <h3 class="card-title" style="margin-bottom: 1.5rem;"><span class="en">Languages & Global Exposure</span><span class="es">Idiomas y Perfil Internacional</span></h3>
-                    <ul class="feature-list">
-                        <li><strong><span class="en">Spanish:</span><span class="es">Español:</span></strong> <span class="en">Native</span><span class="es">Nativo</span></li>
-                        <li><strong><span class="en">English:</span><span class="es">Inglés:</span></strong> <span class="en">Professional working proficiency (C1 Advanced prep).</span><span class="es">Competencia profesional (Preparando C1).</span></li>
-                        <li style="margin-top: 1rem;" class="text-justify">
-                            <span class="en">International client service experience at trade fairs in Germany, combined with a technical working environment during the DLR placement in Braunschweig.</span>
-                            <span class="es">Experiencia práctica en atención al cliente internacional en ferias comerciales en Alemania, y entorno laboral técnico en el DLR.</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-
-        <footer style="text-align: center; padding: 3rem 0; border-top: 1px solid var(--border-subtle); color: var(--text-secondary); font-family: 'Fira Code', monospace; font-size: 0.85rem;">
-            <p>Built with HTML, CSS & JS by Juan José Martínez</p>
-            <p style="margin-top: 0.5rem; color: var(--accent-cyan);">"Secure by Design"</p>
-        </footer>
-
+<main>
+  <!-- HERO -->
+  <section class="hero wrap" id="top">
+    <div class="hero-tag reveal"><span class="dot"></span><span data-i18n="hero.tag">SYSTEMS ONLINE · GROUND STATION LINKED</span></div>
+    <h1 class="reveal" data-d="1">
+      <span class="ln glitch" data-text="JUAN JOSÉ">JUAN JOSÉ</span>
+      <span class="ln glitch accent" data-text="MARTÍNEZ">MARTÍNEZ</span>
+    </h1>
+    <div class="hero-role reveal" data-d="2" data-i18n="hero.role">SOFTWARE ENGINEER · CYBERSECURITY</div>
+    <p class="hero-sub reveal" data-d="2" data-i18n="hero.sub" data-i18n-html="1">
+      Software engineer building <b>advanced frontend architectures</b>, full-stack systems and <b>secure-by-design</b> infrastructure — engineered for high performance and hostile environments.
+    </p>
+    <div class="hero-cta reveal" data-d="3">
+      <a class="btn btn-primary is-interactive" href="#missions" data-i18n="hero.cta1">▸ View missions</a>
+      <a class="btn btn-ghost is-interactive" href="#comms" data-i18n="hero.cta2">◇ Establish comms</a>
     </div>
 
-    <script>
-        // TYPEWRITER EFFECT
-        const textES = "> I build secure, high-performance software.";
-        const textEN = "> I build secure, high-performance software.";
-        // Usamos el mismo texto técnico en ambos idiomas para mantener el toque "hacker", pero puedes modificarlo.
-        
-        const typeWriterElement = document.getElementById('typewriter');
-        let i = 0;
-        
-        function typeWriter() {
-            if (i < textEN.length) {
-                typeWriterElement.innerHTML += textEN.charAt(i);
-                i++;
-                setTimeout(typeWriter, 50);
-            }
-        }
-        
-        // Iniciar al cargar
-        window.addEventListener('load', () => {
-            setTimeout(typeWriter, 500);
-        });
+    <div class="ticker reveal" data-d="3">
+      <div class="ticker-track" id="tickerTrack"></div>
+    </div>
+  </section>
 
-        // SCROLL REVEAL ANIMATION
-        function reveal() {
-            var reveals = document.querySelectorAll(".reveal");
-            for (var j = 0; j < reveals.length; j++) {
-                var windowHeight = window.innerHeight;
-                var elementTop = reveals[j].getBoundingClientRect().top;
-                var elementVisible = 150;
-                if (elementTop < windowHeight - elementVisible) {
-                    reveals[j].classList.add("active");
-                }
-            }
-        }
-        window.addEventListener("scroll", reveal);
-        reveal();
+  <!-- PROFILE -->
+  <section class="wrap" id="profile">
+    <div class="eyebrow reveal"><span class="idx">01</span><span data-i18n="sec.profile">PROFILE BRIEF</span></div>
+    <div class="panel reveal" data-d="1">
+      <p class="profile-body" data-i18n="profile.body" data-i18n-html="1">
+        Computer Engineering graduate (<span class="hl">Software Engineering</span>) with experience across advanced frontend architectures, full-stack and backend development. Strong foundation in Java and web technologies (React, Lit, TypeScript, PHP/Laravel) with a focus on software security. Currently pursuing a <span class="hl">Master's in Cybersecurity</span>, combining high-performance software with Secure-by-Design practices.
+      </p>
+      <div class="profile-meta">
+        <span class="chip" data-i18n="profile.c1"><b>B.Sc.</b> Computer / Software Engineering</span>
+        <span class="chip" data-i18n="profile.c2"><b>M.Sc.</b> Cybersecurity · in progress</span>
+        <span class="chip" data-i18n="profile.c3"><b>NOW</b> Intern @ DLR · Braunschweig</span>
+      </div>
+    </div>
+  </section>
 
-        // LANGUAGE TOGGLE
-        let currentLang = 'en';
-        function toggleLang() {
-            currentLang = currentLang === 'en' ? 'es' : 'en';
-            
-            document.querySelectorAll('.en').forEach(el => el.style.display = currentLang === 'en' ? 'inline-block' : 'none');
-            document.querySelectorAll('.es').forEach(el => el.style.display = currentLang === 'es' ? 'inline-block' : 'none');
-            
-            // Especial para bloques
-            document.querySelectorAll('li.en, p.en, div.en').forEach(el => el.style.display = currentLang === 'en' ? 'block' : 'none');
-            document.querySelectorAll('li.es, p.es, div.es').forEach(el => el.style.display = currentLang === 'es' ? 'block' : 'none');
-        }
-    </script>
+  <!-- SYSTEMS CHECK / SKILLS -->
+  <section class="wrap" id="systems">
+    <div class="eyebrow reveal"><span class="idx">02</span><span data-i18n="sec.systems">SYSTEMS CHECK</span></div>
+    <div class="grid-2">
+      <div class="panel reveal" data-d="1">
+        <div class="sys-head"><h3 data-i18n="sk.lang">LANGUAGES</h3><span class="pct">96%</span></div>
+        <div class="bar" style="--w:96%"><i></i></div>
+        <div class="tags">
+          <span class="tag">Java</span><span class="tag">JavaScript</span><span class="tag">TypeScript</span>
+          <span class="tag">Python</span><span class="tag">PHP</span><span class="tag">SQL</span><span class="tag">C</span><span class="tag">C#</span>
+        </div>
+      </div>
+      <div class="panel reveal" data-d="2">
+        <div class="sys-head"><h3 data-i18n="sk.fw">FRAMEWORKS · UI</h3><span class="pct">93%</span></div>
+        <div class="bar" style="--w:93%"><i></i></div>
+        <div class="tags">
+          <span class="tag">React</span><span class="tag">Lit · Web Components</span><span class="tag">Apache ECharts</span>
+          <span class="tag">Vite</span><span class="tag">Laravel</span><span class="tag">Livewire</span><span class="tag">Filament</span><span class="tag">TailwindCSS</span>
+        </div>
+      </div>
+      <div class="panel reveal" data-d="1">
+        <div class="sys-head"><h3 data-i18n="sk.sec">SECURITY · DEVOPS</h3><span class="pct">90%</span></div>
+        <div class="bar" style="--w:90%"><i></i></div>
+        <div class="tags">
+          <span class="tag">Docker</span><span class="tag">Git</span><span class="tag">Zod</span><span class="tag">DOMPurify</span>
+          <span class="tag" data-i18n="sk.t.offensive">Offensive concepts</span><span class="tag" data-i18n="sk.t.wifi">WiFi audit · CSI</span><span class="tag">VPS · Linux</span>
+        </div>
+      </div>
+      <div class="panel reveal" data-d="2">
+        <div class="sys-head"><h3 data-i18n="sk.data">DATA · METHODS</h3><span class="pct">88%</span></div>
+        <div class="bar" style="--w:88%"><i></i></div>
+        <div class="tags">
+          <span class="tag" data-i18n="sk.t.er">ER modeling</span><span class="tag" data-i18n="sk.t.norm">Normalization</span><span class="tag">Advanced SQL</span><span class="tag">MySQL</span>
+          <span class="tag">Scrum</span><span class="tag">Kanban</span><span class="tag" data-i18n="sk.t.threat">Threat modeling</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MISSION LOG / EXPERIENCE -->
+  <section class="wrap" id="missions">
+    <div class="eyebrow reveal"><span class="idx">03</span><span data-i18n="sec.missions">MISSION LOG</span></div>
+    <div class="panel reveal" data-d="1">
+
+      <article class="mission">
+        <div class="mission-top">
+          <h3 data-i18n="m1.title">Software Engineering Intern — Visual Computing</h3>
+          <span class="status active" data-i18n="status.active">● ACTIVE</span>
+        </div>
+        <div class="org">DLR — German Aerospace Center · Braunschweig, DE</div>
+        <div class="meta"><span class="date">2026.05 — 2026.08</span></div>
+        <ul>
+          <li data-i18n="m1.b1" data-i18n-html="1">R&D on the <b>VVAFER framework</b> for interactive data analytics dashboards using React.</li>
+          <li data-i18n="m1.b2" data-i18n-html="1">Designed a <b>decoupled 4-layer frontend architecture</b>, built for any frontend framework with Lit's Shadow DOM for performance and tech-agnosticism.</li>
+          <li data-i18n="m1.b3" data-i18n-html="1">Built complex telemetry data visualization with <b>Apache ECharts</b> + TypeScript.</li>
+          <li data-i18n="m1.b4" data-i18n-html="1">Applied <b>Defense-in-Depth</b>: schema-validation middleware (Zod) + sanitization (DOMPurify) to proactively mitigate XSS injection.</li>
+        </ul>
+      </article>
+
+      <article class="mission">
+        <div class="mission-top">
+          <h3 data-i18n="m2.title">Junior Developer — El Corte Inglés project</h3>
+          <span class="status done" data-i18n="status.done">○ COMPLETE</span>
+        </div>
+        <div class="org">Knowmad Mood</div>
+        <ul>
+          <li data-i18n="m2.b1" data-i18n-html="1">Analyzed and resolved <b>critical production incidents</b> for a major retailer, ensuring system stability under high-traffic scenarios.</li>
+          <li data-i18n="m2.b2" data-i18n-html="1">Large-scale software project management and active participation in the full <b>SDLC</b>.</li>
+          <li data-i18n="m2.b3" data-i18n-html="1">Direct client contact for agile problem resolution · <b>Scrum</b> framework.</li>
+        </ul>
+      </article>
+
+      <article class="mission">
+        <div class="mission-top">
+          <h3 data-i18n="m3.title">Full-Stack Developer — Campervan rental app</h3>
+          <span class="status done" data-i18n="status.done">○ COMPLETE</span>
+        </div>
+        <div class="org">Grubelgar S.L.</div>
+        <ul>
+          <li data-i18n="m3.b1" data-i18n-html="1"><b>Led the project</b> with Kanban and direct stakeholder management.</li>
+          <li data-i18n="m3.b2" data-i18n-html="1"><b>MVC / service-layer architecture</b> and scalable database modeling.</li>
+          <li data-i18n="m3.b3" data-i18n-html="1">Optimized checkout UX with <b>async (AJAX)</b> logic; automated PDF generation + notifications.</li>
+          <li data-i18n="m3.b4" data-i18n-html="1">End-to-end build in <b>Laravel</b> with payment-gateway integration.</li>
+        </ul>
+      </article>
+
+      <article class="mission">
+        <div class="mission-top">
+          <h3 data-i18n="m4.title">Software Development — Final Degree Project</h3>
+          <span class="status done" data-i18n="status.done">○ COMPLETE</span>
+        </div>
+        <div class="org">UCLM</div>
+        <ul>
+          <li data-i18n="m4.b1" data-i18n-html="1">Designed and built a <b>web admin panel</b> with PHP + XAMPP to automate the subject-assignment process.</li>
+          <li data-i18n="m4.b2" data-i18n-html="1"><b>Unit and integration testing</b> to guarantee delivered software quality.</li>
+          <li data-i18n="m4.b3" data-i18n-html="1">Statistics + visualizations for academic decision-making · planned with <b>Jira</b> and agile methods.</li>
+        </ul>
+      </article>
+
+    </div>
+  </section>
+
+  <!-- HANGAR / PROJECTS -->
+  <section class="wrap" id="hangar">
+    <div class="eyebrow reveal"><span class="idx">04</span><span data-i18n="sec.hangar">THE HANGAR · R&D</span></div>
+    <div class="grid-3">
+      <div class="panel hangar-card reveal is-interactive" data-d="1">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="2"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="10"/><line x1="12" y1="12" x2="20" y2="6"/></svg>
+        <h3 data-i18n="p1.title">WiFi Radar · Pwnagotchi</h3>
+        <p data-i18n="p1.body">Hardware + telemetry research on ESP32 microcontrollers — network experimentation and packet-aware sensing rigs.</p>
+        <div class="stack">ESP32 · RF · TELEMETRY</div>
+      </div>
+      <div class="panel hangar-card reveal is-interactive" data-d="2">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><circle cx="7" cy="7" r="1"/><circle cx="7" cy="17" r="1"/></svg>
+        <h3 data-i18n="p2.title">Home-Lab Cloud</h3>
+        <p data-i18n="p2.body">Self-hosted private cloud via Docker on Linux — Nextcloud + Immich for secure file and photo management.</p>
+        <div class="stack">DOCKER · LINUX · SELF-HOST</div>
+      </div>
+      <div class="panel hangar-card reveal is-interactive" data-d="3">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><line x1="6" y1="8" x2="12" y2="16"/><line x1="18" y1="8" x2="12" y2="16"/><line x1="6" y1="6" x2="18" y2="6"/></svg>
+        <h3 data-i18n="p3.title">Mesh VPN</h3>
+        <p data-i18n="p3.body">Secure private network built with Tailscale — encrypted mesh connectivity across distributed nodes.</p>
+        <div class="stack">TAILSCALE · VPN · NETSEC</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CREDENTIALS + LANGUAGES -->
+  <section class="wrap" id="credentials">
+    <div class="eyebrow reveal"><span class="idx">05</span><span data-i18n="sec.cred">CREDENTIALS</span></div>
+    <div class="grid-2">
+      <div class="panel reveal" data-d="1">
+        <div class="cred">
+          <span class="node live"></span>
+          <div>
+            <h3 data-i18n="ed1.t">M.Sc. in Cybersecurity</h3>
+            <div class="sub" data-i18n="ed1.s">Combining high-performance software with Secure-by-Design.</div>
+            <span class="badge" data-i18n="ed1.b">● IN PROGRESS</span>
+          </div>
+        </div>
+        <div class="cred">
+          <span class="node"></span>
+          <div>
+            <h3 data-i18n="ed2.t">Google Cybersecurity Professional Certificate</h3>
+            <div class="sub" data-i18n="ed2.s">Preparation toward the CompTIA Security+ certification.</div>
+          </div>
+        </div>
+        <div class="cred">
+          <span class="node"></span>
+          <div>
+            <h3 data-i18n="ed3.t">B.Sc. Computer Engineering — Software Engineering</h3>
+            <div class="sub">Universidad de Castilla-La Mancha (UCLM)</div>
+            <span class="badge" data-i18n="ed3.b">★ HONORS · DISTINCTION IN CALCULUS</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel reveal" data-d="2">
+        <div class="sys-head"><h3 data-i18n="sec.lang">COMMS · LANGUAGES</h3></div>
+        <div class="lang-row">
+          <span class="name" data-i18n="lng.es">Spanish</span>
+          <span class="lvl" style="--w:100%"><i></i></span>
+          <span class="tier" data-i18n="lng.native">NATIVE</span>
+        </div>
+        <div class="lang-row">
+          <span class="name" data-i18n="lng.en">English</span>
+          <span class="lvl" style="--w:82%"><i></i></span>
+          <span class="tier">C1 · ADV</span>
+        </div>
+        <p class="lang-note" data-i18n="lng.note">Professional working proficiency (preparing C1 Advanced). International customer service at trade fairs in Germany and a technical work environment during the DLR internship in Braunschweig.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMMS / CONTACT -->
+  <section class="wrap comms" id="comms">
+    <div class="eyebrow reveal" style="justify-content:center"><span class="idx">06</span><span data-i18n="sec.comms">OPEN CHANNEL</span></div>
+    <h2 class="reveal" data-d="1"><span data-i18n="comms.h1">LET'S</span> <span class="accent" data-i18n="comms.h2">ESTABLISH COMMS</span></h2>
+    <p class="reveal" data-d="1" data-i18n="comms.p">Open to software engineering and cybersecurity roles. Ground station is listening — send a transmission.</p>
+    <div class="comms-links reveal" data-d="2">
+      <a class="comm is-interactive" href="mailto:juanjmartinezm55@gmail.com"><span class="k">✉ MAIL</span> juanjmartinezm55@gmail.com</a>
+      <a class="comm is-interactive" href="tel:+34657149602"><span class="k">☏ TEL</span> +34 657 149 602</a>
+      <a class="comm is-interactive" href="https://www.linkedin.com/in/juanjosemartinezmartinez55" target="_blank" rel="noopener"><span class="k">⬡ LINKEDIN</span> /juanjosemartinezmartinez55</a>
+    </div>
+  </section>
+
+  <footer>
+    <p data-i18n="footer">JJMM GROUND STATION · DEEP SPACE UPLINK · MMXXVI</p>
+  </footer>
+</main>
+
+<script>
+/* =========================================================
+   I18N DICTIONARY
+   ========================================================= */
+const I18N = {
+  en:{
+    "meta.title":"Juan José Martínez — Ground Station",
+    "hud.callsign":"JJMM · GROUND STATION","hud.up":"UPLINK",
+    "hero.tag":"SYSTEMS ONLINE · GROUND STATION LINKED",
+    "hero.role":"SOFTWARE ENGINEER · CYBERSECURITY",
+    "hero.sub":"Software engineer building <b>advanced frontend architectures</b>, full-stack systems and <b>secure-by-design</b> infrastructure — engineered for high performance and hostile environments.",
+    "hero.cta1":"▸ View missions","hero.cta2":"◇ Establish comms",
+    "sec.profile":"PROFILE BRIEF",
+    "profile.body":"Computer Engineering graduate (<span class='hl'>Software Engineering</span>) with experience across advanced frontend architectures, full-stack and backend development. Strong foundation in Java and web technologies (React, Lit, TypeScript, PHP/Laravel) with a focus on software security. Currently pursuing a <span class='hl'>Master's in Cybersecurity</span>, combining high-performance software with Secure-by-Design practices.",
+    "profile.c1":"<b>B.Sc.</b> Computer / Software Engineering",
+    "profile.c2":"<b>M.Sc.</b> Cybersecurity · in progress",
+    "profile.c3":"<b>NOW</b> Intern @ DLR · Braunschweig",
+    "sec.systems":"SYSTEMS CHECK",
+    "sk.lang":"LANGUAGES","sk.fw":"FRAMEWORKS · UI","sk.sec":"SECURITY · DEVOPS","sk.data":"DATA · METHODS",
+    "sk.t.offensive":"Offensive concepts","sk.t.wifi":"WiFi audit · CSI",
+    "sk.t.er":"ER modeling","sk.t.norm":"Normalization","sk.t.threat":"Threat modeling",
+    "sec.missions":"MISSION LOG",
+    "status.active":"● ACTIVE","status.done":"○ COMPLETE",
+    "m1.title":"Software Engineering Intern — Visual Computing",
+    "m1.b1":"R&D on the <b>VVAFER framework</b> for interactive data analytics dashboards using React.",
+    "m1.b2":"Designed a <b>decoupled 4-layer frontend architecture</b>, built for any frontend framework with Lit's Shadow DOM for performance and tech-agnosticism.",
+    "m1.b3":"Built complex telemetry data visualization with <b>Apache ECharts</b> + TypeScript.",
+    "m1.b4":"Applied <b>Defense-in-Depth</b>: schema-validation middleware (Zod) + sanitization (DOMPurify) to proactively mitigate XSS injection.",
+    "m2.title":"Junior Developer — El Corte Inglés project",
+    "m2.b1":"Analyzed and resolved <b>critical production incidents</b> for a major retailer, ensuring system stability under high-traffic scenarios.",
+    "m2.b2":"Large-scale software project management and active participation in the full <b>SDLC</b>.",
+    "m2.b3":"Direct client contact for agile problem resolution · <b>Scrum</b> framework.",
+    "m3.title":"Full-Stack Developer — Campervan rental app",
+    "m3.b1":"<b>Led the project</b> with Kanban and direct stakeholder management.",
+    "m3.b2":"<b>MVC / service-layer architecture</b> and scalable database modeling.",
+    "m3.b3":"Optimized checkout UX with <b>async (AJAX)</b> logic; automated PDF generation + notifications.",
+    "m3.b4":"End-to-end build in <b>Laravel</b> with payment-gateway integration.",
+    "m4.title":"Software Development — Final Degree Project",
+    "m4.b1":"Designed and built a <b>web admin panel</b> with PHP + XAMPP to automate the subject-assignment process.",
+    "m4.b2":"<b>Unit and integration testing</b> to guarantee delivered software quality.",
+    "m4.b3":"Statistics + visualizations for academic decision-making · planned with <b>Jira</b> and agile methods.",
+    "sec.hangar":"THE HANGAR · R&D",
+    "p1.title":"WiFi Radar · Pwnagotchi",
+    "p1.body":"Hardware + telemetry research on ESP32 microcontrollers — network experimentation and packet-aware sensing rigs.",
+    "p2.title":"Home-Lab Cloud",
+    "p2.body":"Self-hosted private cloud via Docker on Linux — Nextcloud + Immich for secure file and photo management.",
+    "p3.title":"Mesh VPN",
+    "p3.body":"Secure private network built with Tailscale — encrypted mesh connectivity across distributed nodes.",
+    "sec.cred":"CREDENTIALS",
+    "ed1.t":"M.Sc. in Cybersecurity","ed1.s":"Combining high-performance software with Secure-by-Design.","ed1.b":"● IN PROGRESS",
+    "ed2.t":"Google Cybersecurity Professional Certificate","ed2.s":"Preparation toward the CompTIA Security+ certification.",
+    "ed3.t":"B.Sc. Computer Engineering — Software Engineering","ed3.b":"★ HONORS · DISTINCTION IN CALCULUS",
+    "sec.lang":"COMMS · LANGUAGES","lng.es":"Spanish","lng.en":"English","lng.native":"NATIVE",
+    "lng.note":"Professional working proficiency (preparing C1 Advanced). International customer service at trade fairs in Germany and a technical work environment during the DLR internship in Braunschweig.",
+    "sec.comms":"OPEN CHANNEL","comms.h1":"LET'S","comms.h2":"ESTABLISH COMMS",
+    "comms.p":"Open to software engineering and cybersecurity roles. Ground station is listening — send a transmission.",
+    "footer":"JJMM GROUND STATION · DEEP SPACE UPLINK · MMXXVI"
+  },
+  es:{
+    "meta.title":"Juan José Martínez — Estación Terrestre",
+    "hud.callsign":"JJMM · ESTACIÓN TERRESTRE","hud.up":"ENLACE",
+    "hero.tag":"SISTEMAS EN LÍNEA · ESTACIÓN TERRESTRE ENLAZADA",
+    "hero.role":"INGENIERO DE SOFTWARE · CIBERSEGURIDAD",
+    "hero.sub":"Ingeniero de software que construye <b>arquitecturas frontend avanzadas</b>, sistemas full-stack e infraestructura <b>segura por diseño</b> — pensada para alto rendimiento y entornos hostiles.",
+    "hero.cta1":"▸ Ver misiones","hero.cta2":"◇ Abrir canal",
+    "sec.profile":"INFORME DE PERFIL",
+    "profile.body":"Graduado en Ingeniería Informática (<span class='hl'>Ingeniería del Software</span>) con experiencia en arquitecturas frontend avanzadas, desarrollo full-stack y backend. Sólida base en Java y tecnologías web (React, Lit, TypeScript, PHP/Laravel) con enfoque en seguridad del software. Actualmente cursando un <span class='hl'>Máster en Ciberseguridad</span>, combinando software de alto rendimiento con prácticas Secure-by-Design.",
+    "profile.c1":"<b>Grado</b> Ingeniería Informática / Software",
+    "profile.c2":"<b>Máster</b> Ciberseguridad · en curso",
+    "profile.c3":"<b>AHORA</b> Prácticas @ DLR · Braunschweig",
+    "sec.systems":"CHEQUEO DE SISTEMAS",
+    "sk.lang":"LENGUAJES","sk.fw":"FRAMEWORKS · UI","sk.sec":"SEGURIDAD · DEVOPS","sk.data":"DATOS · MÉTODOS",
+    "sk.t.offensive":"Conceptos ofensivos","sk.t.wifi":"Auditoría WiFi · CSI",
+    "sk.t.er":"Modelado ER","sk.t.norm":"Normalización","sk.t.threat":"Modelado de amenazas",
+    "sec.missions":"REGISTRO DE MISIONES",
+    "status.active":"● ACTIVA","status.done":"○ COMPLETADA",
+    "m1.title":"Ingeniero de Software en Prácticas — Visual Computing",
+    "m1.b1":"I+D del <b>framework VVAFER</b> para paneles interactivos de analítica de datos usando React.",
+    "m1.b2":"Diseño de una <b>arquitectura frontend desacoplada de 4 capas</b>, construida para cualquier framework frontend con el Shadow DOM de Lit para rendimiento y agnosticismo tecnológico.",
+    "m1.b3":"Visualización de datos complejos de telemetría con <b>Apache ECharts</b> + TypeScript.",
+    "m1.b4":"Aplicación de <b>Defensa en Profundidad</b>: middleware de validación de esquemas (Zod) + sanitización (DOMPurify) para mitigar proactivamente inyección XSS.",
+    "m2.title":"Desarrollador Junior — Proyecto El Corte Inglés",
+    "m2.b1":"Análisis y resolución de <b>incidencias críticas de producción</b> para un gran retailer, asegurando la estabilidad del sistema en escenarios de alto tráfico.",
+    "m2.b2":"Gestión de proyectos de software a gran escala y participación activa en todo el <b>ciclo de vida (SDLC)</b>.",
+    "m2.b3":"Contacto directo con clientes para resolución ágil de problemas · marco <b>Scrum</b>.",
+    "m3.title":"Desarrollador Full-Stack — App de alquiler de autocaravanas",
+    "m3.b1":"<b>Liderazgo del proyecto</b> con Kanban y gestión directa con stakeholders.",
+    "m3.b2":"<b>Arquitectura MVC / capa de servicios</b> y modelado escalable de base de datos.",
+    "m3.b3":"Optimización de la UX de checkout con lógica <b>asíncrona (AJAX)</b>; generación automática de PDFs + notificaciones.",
+    "m3.b4":"Desarrollo integral en <b>Laravel</b> con integración de pasarelas de pago.",
+    "m4.title":"Desarrollo de Software — Trabajo Fin de Grado",
+    "m4.b1":"Diseño e implementación de un <b>panel de administración web</b> con PHP + XAMPP para automatizar el proceso de asignación de asignaturas.",
+    "m4.b2":"<b>Pruebas unitarias y de integración</b> para garantizar la calidad del software entregado.",
+    "m4.b3":"Estadísticas + visualizaciones para la toma de decisiones académicas · planificado con <b>Jira</b> y métodos ágiles.",
+    "sec.hangar":"EL HANGAR · I+D",
+    "p1.title":"WiFi Radar · Pwnagotchi",
+    "p1.body":"Investigación en hardware + telemetría sobre microcontroladores ESP32 — experimentación con redes y sensado de paquetes.",
+    "p2.title":"Nube Home-Lab",
+    "p2.body":"Nube privada autoalojada con Docker en Linux — Nextcloud + Immich para gestión segura de archivos y fotos.",
+    "p3.title":"VPN Mallada",
+    "p3.body":"Red privada segura construida con Tailscale — conectividad mallada cifrada entre nodos distribuidos.",
+    "sec.cred":"CREDENCIALES",
+    "ed1.t":"Máster en Ciberseguridad","ed1.s":"Combinando software de alto rendimiento con Secure-by-Design.","ed1.b":"● EN CURSO",
+    "ed2.t":"Certificado Profesional de Ciberseguridad de Google","ed2.s":"Preparación para la certificación CompTIA Security+.",
+    "ed3.t":"Grado en Ingeniería Informática — Ingeniería del Software","ed3.b":"★ MENCIÓN · MATRÍCULA DE HONOR EN CÁLCULO",
+    "sec.lang":"CANALES · IDIOMAS","lng.es":"Español","lng.en":"Inglés","lng.native":"NATIVO",
+    "lng.note":"Competencia profesional (preparando C1 Advanced). Atención al cliente internacional en ferias comerciales en Alemania y entorno laboral técnico durante las prácticas en el DLR en Braunschweig.",
+    "sec.comms":"CANAL ABIERTO","comms.h1":"VAMOS A","comms.h2":"ABRIR CANAL",
+    "comms.p":"Disponible para roles de ingeniería de software y ciberseguridad. La estación terrestre escucha — envía una transmisión.",
+    "footer":"ESTACIÓN TERRESTRE JJMM · ENLACE ESPACIO PROFUNDO · MMXXVI"
+  }
+};
+
+let LANG = 'en';
+function setLang(lang){
+  LANG = lang;
+  const dict = I18N[lang];
+  document.documentElement.lang = lang;
+  document.title = dict["meta.title"];
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const k = el.getAttribute('data-i18n');
+    if(dict[k]===undefined) return;
+    if(el.hasAttribute('data-i18n-html')) el.innerHTML = dict[k];
+    else el.textContent = dict[k];
+  });
+  document.getElementById('btnEN').classList.toggle('active',lang==='en');
+  document.getElementById('btnES').classList.toggle('active',lang==='es');
+  buildTicker();
+}
+
+/* =========================================================
+   SKILL TICKER
+   ========================================================= */
+const TICK = ['JAVA','TYPESCRIPT','REACT','LIT','APACHE ECHARTS','LARAVEL','PYTHON','DOCKER','ZOD','DOMPURIFY','VPS · LINUX','TAILSCALE','ESP32','SCRUM','THREAT MODELING','SECURE BY DESIGN'];
+function buildTicker(){
+  const t = document.getElementById('tickerTrack');
+  const one = TICK.map(s=>`<span><i>+</i>${s}</span>`).join('');
+  t.innerHTML = one + one; /* duplicate for seamless loop */
+}
+
+/* =========================================================
+   CUSTOM CURSOR
+   ========================================================= */
+(function(){
+  if(!window.matchMedia('(pointer:fine)').matches) return;
+  const cur = document.getElementById('cursor');
+  const dot = document.getElementById('cursorDot');
+  let x=innerWidth/2,y=innerHeight/2,cx=x,cy=y;
+  addEventListener('mousemove',e=>{
+    x=e.clientX;y=e.clientY;
+    dot.style.transform=`translate(${x}px,${y}px)`;
+  });
+  function loop(){
+    cx+=(x-cx)*0.22;cy+=(y-cy)*0.22;
+    cur.style.transform=cur.classList.contains('hot')
+      ? `translate(${cx}px,${cy}px) rotate(45deg)`
+      : `translate(${cx}px,${cy}px)`;
+    requestAnimationFrame(loop);
+  }
+  loop();
+  const hot = 'a,button,.is-interactive';
+  document.addEventListener('mouseover',e=>{ if(e.target.closest(hot)) cur.classList.add('hot'); });
+  document.addEventListener('mouseout',e=>{ if(e.target.closest(hot)) cur.classList.remove('hot'); });
+  addEventListener('mouseleave',()=>{cur.style.opacity=0;dot.style.opacity=0;});
+  addEventListener('mouseenter',()=>{cur.style.opacity=1;dot.style.opacity=1;});
+})();
+
+/* =========================================================
+   STARFIELD (lightweight, generated once)
+   ========================================================= */
+(function(){
+  const box=document.getElementById('stars');
+  const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const n=reduce?40:90;
+  let html='';
+  for(let i=0;i<n;i++){
+    const s=Math.random()*1.8+0.4;
+    html+=`<span class="star" style="left:${Math.random()*100}%;top:${Math.random()*100}%;width:${s}px;height:${s}px;animation-duration:${2+Math.random()*4}s;animation-delay:${-Math.random()*5}s"></span>`;
+  }
+  box.innerHTML=html;
+})();
+
+/* =========================================================
+   PARALLAX — inverse, depth (satellite + stars)
+   ========================================================= */
+(function(){
+  if(window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  const sat=document.getElementById('satStage');
+  const stars=document.getElementById('stars');
+  let tx=0,ty=0,px=0,py=0;
+  addEventListener('mousemove',e=>{
+    tx=(e.clientX/innerWidth-0.5);
+    ty=(e.clientY/innerHeight-0.5);
+  });
+  function loop(){
+    px+=(tx-px)*0.06; py+=(ty-py)*0.06;
+    /* inverse parallax: satellite drifts opposite to cursor */
+    sat.style.transform=`translate(${-px*40}px,${-py*30}px)`;
+    stars.style.transform=`translate(${px*14}px,${py*10}px)`;
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+/* =========================================================
+   SCROLL REVEAL
+   ========================================================= */
+(function(){
+  const io=new IntersectionObserver((entries)=>{
+    entries.forEach(en=>{
+      if(en.isIntersecting){en.target.classList.add('is-in');io.unobserve(en.target);}
+    });
+  },{threshold:0.12,rootMargin:'0px 0px -8% 0px'});
+  document.querySelectorAll('.reveal,.panel').forEach(el=>io.observe(el));
+})();
+
+/* =========================================================
+   LIVE TELEMETRY (HUD flavor)
+   ========================================================= */
+(function(){
+  const lat=document.getElementById('telLat'),lon=document.getElementById('telLon'),
+        sig=document.getElementById('telSig'),up=document.getElementById('telUp');
+  const start=Date.now();
+  let bLat=40.31,bLon=-3.74;
+  function pad(n){return String(n).padStart(2,'0');}
+  setInterval(()=>{
+    bLat+=(Math.random()-0.5)*0.04; bLon+=(Math.random()-0.5)*0.04;
+    lat.textContent=bLat.toFixed(2);
+    lon.textContent=bLon.toFixed(2);
+    sig.textContent=(94+Math.floor(Math.random()*6))+'%';
+  },1600);
+  setInterval(()=>{
+    const s=Math.floor((Date.now()-start)/1000);
+    up.textContent=`${pad(Math.floor(s/3600))}:${pad(Math.floor(s/60)%60)}:${pad(s%60)}`;
+  },1000);
+})();
+
+/* INIT */
+setLang('en');
+</script>
 </body>
 </html>
